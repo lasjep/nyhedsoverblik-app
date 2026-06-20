@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1366">
+<title>Nyhedsoverblik – iPadOS Mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, sans-serif; background: #1c1c1e; display: flex;
+         justify-content: center; align-items: center; min-height: 100vh; padding: 24px; }
+
+  /* iPad frame */
+  .ipad-frame {
+    width: 1210px; height: 834px;
+    background: #f2f2f7;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 40px 120px rgba(0,0,0,0.7), inset 0 0 0 1px rgba(255,255,255,0.12);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* Status bar */
+  .status-bar {
+    height: 24px; background: #f2f2f7;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px;
+    font-size: 12px; font-weight: 600; color: #000;
+    border-bottom: 0.5px solid rgba(0,0,0,0.15);
+  }
+  .status-right { display: flex; gap: 6px; align-items: center; }
+
+  /* Nav bar */
+  .nav-bar {
+    height: 52px; background: rgba(242,242,247,0.94);
+    backdrop-filter: blur(20px);
+    border-bottom: 0.5px solid rgba(0,0,0,0.18);
+    display: flex; align-items: center; gap: 0;
+  }
+
+  /* Main layout: sidebar + content + detail */
+  .main-layout {
+    flex: 1; display: flex; overflow: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 260px; background: rgba(242,242,247,0.95);
+    border-right: 0.5px solid rgba(0,0,0,0.15);
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+  }
+  .sidebar-header {
+    padding: 14px 20px 6px;
+    font-size: 22px; font-weight: 700; color: #000;
+    letter-spacing: -0.4px;
+  }
+  .sidebar-section-label {
+    font-size: 11px; font-weight: 600; color: #8e8e93;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 12px 20px 4px;
+  }
+  .source-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 16px;
+    cursor: pointer; border-radius: 10px; margin: 0 6px;
+    transition: background 0.12s;
+    font-size: 15px; color: #000;
+  }
+  .source-row:hover { background: rgba(0,0,0,0.06); }
+  .source-row.active { background: rgba(0,122,255,0.12); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .source-name { flex: 1; }
+  .badge {
+    font-size: 11px; font-weight: 700; color: white;
+    padding: 2px 7px; border-radius: 99px;
+  }
+  .divider { height: 0.5px; background: rgba(0,0,0,0.12); margin: 4px 20px; }
+  .filter-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px; margin: 0 6px;
+    font-size: 14px; color: #8e8e93;
+  }
+  .filter-row svg { opacity: 0.55; }
+
+  /* ── CONTENT (feed) ── */
+  .feed-pane {
+    width: 480px; background: #f2f2f7;
+    border-right: 0.5px solid rgba(0,0,0,0.15);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .feed-nav {
+    height: 44px; background: rgba(242,242,247,0.94);
+    backdrop-filter: blur(20px);
+    border-bottom: 0.5px solid rgba(0,0,0,0.18);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 14px;
+  }
+  .feed-nav-title { font-size: 17px; font-weight: 600; }
+  .feed-nav-tools { display: flex; gap: 14px; align-items: center; }
+  .seg-control {
+    display: flex; border-radius: 8px; overflow: hidden;
+    border: 0.5px solid rgba(0,0,0,0.2);
+    background: rgba(0,0,0,0.06);
+  }
+  .seg-btn {
+    padding: 4px 10px; font-size: 13px; cursor: pointer;
+    border: none; background: transparent;
+    display: flex; align-items: center;
+    color: #3c3c43;
+  }
+  .seg-btn.active { background: white; border-radius: 7px; margin: 1px; }
+  .icon-btn {
+    background: none; border: none; cursor: pointer; padding: 2px;
+    color: #007aff; font-size: 17px;
+  }
+
+  /* Search bar */
+  .search-bar {
+    margin: 8px 14px;
+    background: rgba(0,0,0,0.07);
+    border-radius: 10px;
+    padding: 7px 12px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; color: #8e8e93;
+  }
+
+  /* Grid tiles */
+  .feed-scroll { flex: 1; overflow-y: auto; padding: 10px; }
+  .tile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .tile {
+    background: white; border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    cursor: pointer; transition: transform 0.1s;
+  }
+  .tile:hover { transform: scale(1.01); }
+  .tile.selected { outline: 2px solid #007aff; }
+  .tile-img {
+    height: 100px; display: flex; align-items: center; justify-content: center;
+    font-size: 34px;
+  }
+  .tile-body { padding: 9px 10px 10px; }
+  .tile-title {
+    font-size: 12.5px; font-weight: 600; line-height: 1.4;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden; color: #000;
+    font-family: 'Georgia', serif;
+    margin-bottom: 6px;
+  }
+  .tile-meta { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #8e8e93; }
+  .tile-meta .dot { width: 6px; height: 6px; }
+  .tile-age { margin-left: auto; font-variant-numeric: tabular-nums; }
+
+  /* List rows */
+  .list-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px;
+    cursor: pointer; background: white;
+    border-bottom: 0.5px solid rgba(0,0,0,0.1);
+    transition: background 0.1s;
+  }
+  .list-row:hover { background: #f0f0f5; }
+  .list-row.selected { background: rgba(0,122,255,0.07); }
+  .list-thumb {
+    width: 52px; height: 40px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .color-bar { width: 3px; height: 34px; border-radius: 2px; flex-shrink: 0; }
+  .list-title {
+    font-size: 14px; font-weight: 600; line-height: 1.35;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; font-family: 'Georgia', serif;
+    flex: 1;
+  }
+  .list-meta { font-size: 11px; color: #8e8e93; white-space: nowrap; text-align: right; }
+  .cluster-badge {
+    font-size: 10px; font-weight: 700; color: white;
+    background: rgba(60,60,67,0.4); border-radius: 99px;
+    padding: 2px 6px; display: inline-flex; align-items: center; gap: 3px;
+  }
+
+  /* ── DETAIL ── */
+  .detail-pane {
+    flex: 1; background: white;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .browser-bar {
+    height: 44px; background: rgba(249,249,249,0.95);
+    border-bottom: 0.5px solid rgba(0,0,0,0.15);
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 14px;
+  }
+  .url-bar {
+    flex: 1; background: rgba(0,0,0,0.07);
+    border-radius: 8px; padding: 5px 12px;
+    font-size: 13px; color: #555;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .url-lock { font-size: 10px; color: #8e8e93; }
+  .browser-btn {
+    background: none; border: none; color: #007aff;
+    font-size: 16px; cursor: pointer; padding: 2px 4px;
+  }
+  .browser-btn.dim { color: #c7c7cc; }
+
+  .article-scroll { flex: 1; overflow-y: auto; padding: 24px; }
+  .article-hero {
+    width: 100%; height: 200px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 52px; margin-bottom: 20px;
+  }
+  .article-headline {
+    font-size: 22px; font-weight: 700; line-height: 1.3;
+    font-family: 'Georgia', serif; color: #000;
+    margin-bottom: 12px;
+  }
+  .article-byline {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 14px; color: #8e8e93; margin-bottom: 16px;
+  }
+  .skeleton { background: #f0f0f5; border-radius: 4px; height: 14px; margin: 8px 0; }
+
+  /* Tabs at bottom — iPadOS style */
+  .tab-bar {
+    height: 0; /* Hidden on iPad landscape — sidebar handles nav */
+  }
+
+  /* Context label */
+  .mockup-label {
+    position: absolute; top: 8px; right: 16px;
+    font-size: 11px; color: rgba(0,0,0,0.3);
+    font-weight: 500; pointer-events: none;
+  }
+
+  /* Mode toggle: show list or grid */
+  .mode-grid .list-section { display: none; }
+  .mode-list .tile-grid { display: none; }
+  .mode-list .list-section { display: block; }
+</style>
+</head>
+<body>
+
+<div class="ipad-frame" id="frame">
+  <div class="mockup-label">Mockup — iPadOS · Nyhedsoverblik</div>
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="status-right">
+      <span>●●●●</span>
+      <span>WiFi</span>
+      <span>🔋 87%</span>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main-layout">
+
+    <!-- ── SIDEBAR ── -->
+    <div class="sidebar">
+      <div class="sidebar-header">Nyhedsoverblik</div>
+
+      <div class="sidebar-section-label">Kilder</div>
+
+      <div class="source-row active" onclick="selectSource(this, 'Alle')">
+        <div class="dot" style="background:#007aff"></div>
+        <span class="source-name">Alle nyheder</span>
+        <span class="badge" style="background:#007aff">49</span>
+      </div>
+      <div class="source-row" onclick="selectSource(this, 'Berlingske')">
+        <div class="dot" style="background:#1f6f6f"></div>
+        <span class="source-name">Berlingske</span>
+        <span class="badge" style="background:#1f6f6f">8</span>
+      </div>
+      <div class="source-row" onclick="selectSource(this, 'Politiken')">
+        <div class="dot" style="background:#c0392b"></div>
+        <span class="source-name">Politiken</span>
+        <span class="badge" style="background:#c0392b">5</span>
+      </div>
+      <div class="source-row" onclick="selectSource(this, 'Ekstra Bladet')">
+        <div class="dot" style="background:#f5a623"></div>
+        <span class="source-name">Ekstra Bladet</span>
+        <span class="badge" style="background:#f5a623">12</span>
+      </div>
+      <div class="source-row" onclick="selectSource(this, 'The Verge')">
+        <div class="dot" style="background:#e5343a"></div>
+        <span class="source-name">The Verge</span>
+        <span class="badge" style="background:#e5343a">6</span>
+      </div>
+      <div class="source-row" onclick="selectSource(this, 'MacRumors')">
+        <div class="dot" style="background:#2c3e50"></div>
+        <span class="source-name">MacRumors</span>
+        <span class="badge" style="background:#2c3e50">9</span>
+      </div>
+      <div class="source-row" onclick="selectSource(this, 'Børsen')">
+        <div class="dot" style="background:#c8a400"></div>
+        <span class="source-name">Børsen</span>
+        <span class="badge" style="background:#c8a400">3</span>
+      </div>
+      <div class="source-row" onclick="selectSource(this, 'MediaWatch')">
+        <div class="dot" style="background:#005b8e"></div>
+        <span class="source-name">MediaWatch</span>
+        <span class="badge" style="background:#005b8e">2</span>
+      </div>
+
+      <!-- Deaktiveret kilde -->
+      <div class="source-row" style="opacity:0.4" onclick="selectSource(this, 'Ars Technica')">
+        <div class="dot" style="background:#ccc"></div>
+        <span class="source-name">Ars Technica</span>
+        <span style="font-size:12px">👁‍🗨</span>
+      </div>
+
+      <div class="divider" style="margin-top:8px"></div>
+      <div class="sidebar-section-label">Filtre</div>
+
+      <div class="filter-row">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        Skjul sport
+        <span style="margin-left:auto">
+          <span style="display:inline-block;width:36px;height:22px;background:#34c759;border-radius:11px;position:relative">
+            <span style="display:block;width:18px;height:18px;background:white;border-radius:50%;position:absolute;right:2px;top:2px;box-shadow:0 1px 3px rgba(0,0,0,0.3)"></span>
+          </span>
+        </span>
+      </div>
+      <div class="filter-row">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        Skjul clickbait
+        <span style="margin-left:auto">
+          <span style="display:inline-block;width:36px;height:22px;background:#34c759;border-radius:11px;position:relative">
+            <span style="display:block;width:18px;height:18px;background:white;border-radius:50%;position:absolute;right:2px;top:2px;box-shadow:0 1px 3px rgba(0,0,0,0.3)"></span>
+          </span>
+        </span>
+      </div>
+      <div class="filter-row">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        Skjul læste
+        <span style="margin-left:auto">
+          <span style="display:inline-block;width:36px;height:22px;background:#e5e5ea;border-radius:11px;position:relative">
+            <span style="display:block;width:18px;height:18px;background:white;border-radius:50%;position:absolute;left:2px;top:2px;box-shadow:0 1px 3px rgba(0,0,0,0.3)"></span>
+          </span>
+        </span>
+      </div>
+
+      <div style="flex:1"></div>
+
+      <!-- Bundlinje -->
+      <div style="border-top:0.5px solid rgba(0,0,0,0.12);padding:10px 16px;display:flex;gap:8px;align-items:center">
+        <button onclick="showSettings()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#007aff" title="Indstillinger">⚙️</button>
+        <span style="font-size:12px;color:#8e8e93">Opdateret 2 min. siden</span>
+        <button style="background:none;border:none;font-size:14px;color:#007aff;cursor:pointer;margin-left:auto">↻</button>
+      </div>
+    </div>
+
+    <!-- ── FEED ── -->
+    <div class="feed-pane" id="feedPane">
+      <div class="feed-nav">
+        <span class="feed-nav-title" id="feedTitle">Alle nyheder</span>
+        <div class="feed-nav-tools">
+          <div class="seg-control">
+            <button class="seg-btn active" id="btnGrid" onclick="setMode('grid')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="2" width="9" height="9" rx="1.5"/><rect x="13" y="2" width="9" height="9" rx="1.5"/><rect x="2" y="13" width="9" height="9" rx="1.5"/><rect x="13" y="13" width="9" height="9" rx="1.5"/></svg>
+            </button>
+            <button class="seg-btn" id="btnList" onclick="setMode('list')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+          </div>
+          <button class="icon-btn">↻</button>
+          <button class="icon-btn" onclick="markAllRead()" title="Marker alle læst">✓✓</button>
+        </div>
+      </div>
+
+      <!-- Søgefelt -->
+      <div class="search-bar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8e8e93" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Søg i overskrifter
+      </div>
+
+      <div class="feed-scroll mode-grid" id="feedScroll">
+
+        <!-- Grid-view -->
+        <div class="tile-grid">
+          <div class="tile selected" onclick="openArticle(this, 0)">
+            <div class="tile-img" style="background:rgba(31,111,111,0.1)">🌍</div>
+            <div class="tile-body">
+              <div class="tile-title">EU-Kommissionen vil forbyde russiske energiselskaber adgang til europæisk infrastruktur</div>
+              <div class="tile-meta"><div class="dot" style="background:#1f6f6f"></div> Berlingske <span class="tile-age">3 min.</span></div>
+            </div>
+          </div>
+          <div class="tile" onclick="openArticle(this, 1)">
+            <div class="tile-img" style="background:rgba(229,52,58,0.1)">🖥️</div>
+            <div class="tile-body">
+              <div class="tile-title">Anthropic udgiver Claude 4 med ny Mythos-arkitektur og kontekstvindue på 1M tokens</div>
+              <div class="tile-meta"><div class="dot" style="background:#e5343a"></div> The Verge <span class="tile-age">5 min.</span></div>
+            </div>
+          </div>
+          <div class="tile" onclick="openArticle(this, 2)">
+            <div class="tile-img" style="background:rgba(192,57,43,0.1)">✈️</div>
+            <div class="tile-body">
+              <div class="tile-title">Trump siger Iran nedskød amerikansk militærhelikopter over Hormuzstrædet</div>
+              <div class="tile-meta"><div class="dot" style="background:#1f6f6f"></div> Berlingske <span class="tile-age">6 min.</span></div>
+            </div>
+          </div>
+          <div class="tile" onclick="openArticle(this, 3)">
+            <div class="tile-img" style="background:rgba(44,62,80,0.1)">📱</div>
+            <div class="tile-body">
+              <div class="tile-title">Apple afslører iOS 27 med ny on-device AI og redesignet hjemskærm</div>
+              <div class="tile-meta"><div class="dot" style="background:#2c3e50"></div> MacRumors <span class="tile-age">11 min.</span></div>
+            </div>
+          </div>
+          <div class="tile" onclick="openArticle(this, 4)">
+            <div class="tile-img" style="background:rgba(200,164,0,0.1)">🚗</div>
+            <div class="tile-body">
+              <div class="tile-title">Elbilsalget falder for tredje måned i træk trods statslige tilskud</div>
+              <div class="tile-meta"><div class="dot" style="background:#c8a400"></div> Børsen <span class="tile-age">14 min.</span></div>
+            </div>
+          </div>
+          <div class="tile" onclick="openArticle(this, 5)">
+            <div class="tile-img" style="background:rgba(31,111,111,0.1)">💊</div>
+            <div class="tile-body">
+              <div class="tile-title">Dansk startup rejser 180 mio. kr. til AI-drevet sundhedsplatform</div>
+              <div class="tile-meta"><div class="dot" style="background:#1f6f6f"></div> Berlingske <span class="tile-age">18 min.</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- En cluster-linje imellem -->
+        <div class="list-section" style="display:block; background:white; border-radius:12px; margin-bottom:10px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.08)">
+          <div class="list-row" onclick="openArticle(this, 6)" style="background:white">
+            <div class="color-bar" style="background:#005b8e"></div>
+            <div style="flex:1">
+              <div class="list-title">Mediebranchen: DR mister 12 pct. af seerne til streamingplatforme på ét år</div>
+              <div style="margin-top:4px;display:flex;align-items:center;gap:6px">
+                <div class="dot" style="background:#005b8e;width:6px;height:6px"></div>
+                <span style="font-size:11px;color:#8e8e93">MediaWatch</span>
+                <span class="cluster-badge">▾ 3 kilder</span>
+              </div>
+            </div>
+            <div class="list-meta">45 min.</div>
+          </div>
+        </div>
+
+        <!-- Mere grid -->
+        <div class="tile-grid">
+          <div class="tile" onclick="openArticle(this, 7)">
+            <div class="tile-img" style="background:rgba(229,52,58,0.1)">🚕</div>
+            <div class="tile-body">
+              <div class="tile-title">Tesla lancerer selvkørende taxa i tre nye europæiske byer fra oktober</div>
+              <div class="tile-meta"><div class="dot" style="background:#e5343a"></div> The Verge <span class="tile-age">1 t.</span></div>
+            </div>
+          </div>
+          <div class="tile" onclick="openArticle(this, 8)" style="opacity:0.55">
+            <div class="tile-img" style="background:rgba(0,0,0,0.05)">💻</div>
+            <div class="tile-body">
+              <div class="tile-title" style="color:#555">MacBook Pro opdateres med M5 Max — hurtigere GPU og 8K-understøttelse</div>
+              <div class="tile-meta"><div class="dot" style="background:#f5a623"></div> Ars Technica <span class="tile-age">1 t.</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Liste-section (altid vist i mixed layout) -->
+        <div class="list-section" style="display:block; background:white; border-radius:12px; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,0.08)">
+          <div class="list-row">
+            <div class="color-bar" style="background:#c0392b"></div>
+            <div style="flex:1">
+              <div class="list-title">Folkeskolen: Lærermangel tvinger kommuner til at lukke klasser</div>
+              <div style="margin-top:3px;display:flex;align-items:center;gap:5px">
+                <div class="dot" style="background:#c0392b;width:6px;height:6px"></div>
+                <span style="font-size:11px;color:#8e8e93">Politiken</span>
+              </div>
+            </div>
+            <div class="list-meta">1 t.</div>
+          </div>
+        </div>
+
+      </div><!-- /feed-scroll -->
+    </div><!-- /feed-pane -->
+
+    <!-- ── DETAIL ── -->
+    <div class="detail-pane" id="detailPane">
+      <!-- Browser-toolbar -->
+      <div class="browser-bar">
+        <button class="browser-btn" onclick="closeArticle()">✕</button>
+        <button class="browser-btn dim">‹</button>
+        <button class="browser-btn dim">›</button>
+        <div class="url-bar">
+          <span class="url-lock">🔒</span>
+          <span id="urlText">berlingske.dk</span>
+        </div>
+        <button class="browser-btn" onclick="alert('Åbner i Safari…')">⧉</button>
+        <button class="browser-btn">↑</button>
+      </div>
+
+      <!-- Artikel-indhold -->
+      <div class="article-scroll" id="articleContent">
+        <!-- Default tom state -->
+        <div id="emptyState" style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#c7c7cc">
+          <div style="font-size:52px">📰</div>
+          <div style="font-size:17px;font-weight:600;color:#8e8e93">Vælg en artikel</div>
+          <div style="font-size:14px;color:#c7c7cc">Tryk på en overskrift for at læse den her</div>
+        </div>
+        <div id="articleBody" style="display:none">
+          <div class="article-hero" id="articleHero" style="background:rgba(31,111,111,0.1)">🌍</div>
+          <div class="article-headline" id="articleHeadline">EU-Kommissionen vil forbyde russiske energiselskaber adgang til europæisk infrastruktur</div>
+          <div class="article-byline">
+            <div class="dot" id="bylineDot" style="background:#1f6f6f"></div>
+            <span id="bylineSource">Berlingske</span>
+            <span>·</span>
+            <span id="bylineAge">3 min. siden</span>
+            <span style="margin-left:auto">
+              <button style="background:rgba(0,122,255,0.1);border:none;color:#007aff;padding:5px 12px;border-radius:8px;font-size:13px;cursor:pointer">✓ Marker læst</button>
+            </span>
+          </div>
+          <div style="height:0.5px;background:#e5e5ea;margin:4px 0 16px"></div>
+          <!-- Fake brødtekst -->
+          <div class="skeleton" style="width:100%"></div>
+          <div class="skeleton" style="width:95%"></div>
+          <div class="skeleton" style="width:88%"></div>
+          <div class="skeleton" style="width:72%"></div>
+          <div style="height:12px"></div>
+          <div class="skeleton" style="width:100%"></div>
+          <div class="skeleton" style="width:97%"></div>
+          <div class="skeleton" style="width:60%"></div>
+          <div style="height:12px"></div>
+          <div class="skeleton" style="width:100%"></div>
+          <div class="skeleton" style="width:91%"></div>
+          <div class="skeleton" style="width:84%"></div>
+          <div class="skeleton" style="width:55%"></div>
+          <div style="height:12px"></div>
+          <div class="skeleton" style="width:100%"></div>
+          <div class="skeleton" style="width:78%"></div>
+
+          <!-- Relaterede -->
+          <div style="margin-top:28px;padding-top:16px;border-top:0.5px solid #e5e5ea">
+            <div style="font-size:13px;font-weight:600;color:#8e8e93;margin-bottom:10px">RELATEREDE HISTORIER</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="background:#f2f2f7;border-radius:8px;padding:10px 12px;cursor:pointer">
+                <div style="font-size:13px;font-weight:600;font-family:Georgia,serif;line-height:1.35">Trump truer med sanktioner mod lande der handler med Rusland</div>
+                <div style="font-size:11px;color:#8e8e93;margin-top:4px">Politiken · 8 min. siden</div>
+              </div>
+              <div style="background:#f2f2f7;border-radius:8px;padding:10px 12px;cursor:pointer">
+                <div style="font-size:13px;font-weight:600;font-family:Georgia,serif;line-height:1.35">Ukraine: Rusland bryder aftalen om civile korridorer</div>
+                <div style="font-size:11px;color:#8e8e93;margin-top:4px">Ekstra Bladet · 22 min. siden</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main-layout -->
+</div><!-- /ipad-frame -->
+
+<!-- Settings sheet mockup (hidden) -->
+<div id="settingsSheet" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:flex-end;justify-content:center" onclick="hideSettings()">
+  <div style="background:#f2f2f7;border-radius:16px 16px 0 0;width:560px;max-height:60vh;overflow-y:auto;padding:20px" onclick="e=>e.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span style="font-size:20px;font-weight:700">Indstillinger</span>
+      <button onclick="hideSettings()" style="background:rgba(0,0,0,0.08);border:none;border-radius:50%;width:28px;height:28px;font-size:14px;cursor:pointer">✕</button>
+    </div>
+    <div style="background:white;border-radius:12px;overflow:hidden">
+      <div style="padding:12px 16px;border-bottom:0.5px solid #e5e5ea;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:15px">Claude API-nøgle</span>
+        <span style="font-size:13px;color:#34c759;font-weight:600">Tilkoblet ✓</span>
+      </div>
+      <div style="padding:12px 16px;border-bottom:0.5px solid #e5e5ea;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:15px">Breaking news-notifikationer</span>
+        <span style="display:inline-block;width:36px;height:22px;background:#34c759;border-radius:11px;position:relative"><span style="display:block;width:18px;height:18px;background:white;border-radius:50%;position:absolute;right:2px;top:2px"></span></span>
+      </div>
+      <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:15px">Opdater automatisk hvert</span>
+        <span style="font-size:15px;color:#007aff">15 min. ›</span>
+      </div>
+    </div>
+    <div style="margin-top:12px;background:white;border-radius:12px;overflow:hidden">
+      <div style="padding:12px 16px;border-bottom:0.5px solid #e5e5ea;font-size:15px;font-weight:600;color:#8e8e93;font-size:12px;text-transform:uppercase;letter-spacing:0.5px">Tilføj kilde</div>
+      <div style="padding:12px 16px;display:flex;gap:10px">
+        <input placeholder="https://eksempel.dk" style="flex:1;border:0.5px solid #c7c7cc;border-radius:8px;padding:8px 12px;font-size:14px">
+        <button style="background:#007aff;color:white;border:none;border-radius:8px;padding:8px 16px;font-size:14px;cursor:pointer">Find RSS</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const articles = [
+  { headline: "EU-Kommissionen vil forbyde russiske energiselskaber adgang til europæisk infrastruktur", source: "Berlingske", age: "3 min.", color: "#1f6f6f", emoji: "🌍", url: "berlingske.dk" },
+  { headline: "Anthropic udgiver Claude 4 med ny Mythos-arkitektur og kontekstvindue på 1M tokens", source: "The Verge", age: "5 min.", color: "#e5343a", emoji: "🖥️", url: "theverge.com" },
+  { headline: "Trump siger Iran nedskød amerikansk militærhelikopter over Hormuzstrædet", source: "Berlingske", age: "6 min.", color: "#1f6f6f", emoji: "✈️", url: "berlingske.dk" },
+  { headline: "Apple afslører iOS 27 med ny on-device AI og redesignet hjemskærm", source: "MacRumors", age: "11 min.", color: "#2c3e50", emoji: "📱", url: "macrumors.com" },
+  { headline: "Elbilsalget falder for tredje måned i træk trods statslige tilskud", source: "Børsen", age: "14 min.", color: "#c8a400", emoji: "🚗", url: "borsen.dk" },
+  { headline: "Dansk startup rejser 180 mio. kr. til AI-drevet sundhedsplatform", source: "Berlingske", age: "18 min.", color: "#1f6f6f", emoji: "💊", url: "berlingske.dk" },
+  { headline: "Mediebranchen: DR mister 12 pct. af seerne til streamingplatforme på ét år", source: "MediaWatch", age: "45 min.", color: "#005b8e", emoji: "📺", url: "mediawatch.dk" },
+  { headline: "Tesla lancerer selvkørende taxa i tre nye europæiske byer fra oktober", source: "The Verge", age: "1 t.", color: "#e5343a", emoji: "🚕", url: "theverge.com" },
+  { headline: "MacBook Pro opdateres med M5 Max — hurtigere GPU og 8K-understøttelse", source: "Ars Technica", age: "1 t.", color: "#f67a1a", emoji: "💻", url: "arstechnica.com" },
+];
+
+function openArticle(el, idx) {
+  document.querySelectorAll('.tile, .list-row').forEach(t => t.classList.remove('selected'));
+  el.classList.add('selected');
+  const a = articles[idx] || articles[0];
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('articleBody').style.display = 'block';
+  document.getElementById('articleHeadline').textContent = a.headline;
+  document.getElementById('articleHero').textContent = a.emoji;
+  document.getElementById('articleHero').style.background = a.color + '18';
+  document.getElementById('bylineDot').style.background = a.color;
+  document.getElementById('bylineSource').textContent = a.source;
+  document.getElementById('bylineAge').textContent = a.age + ' siden';
+  document.getElementById('urlText').textContent = a.url;
+}
+
+function closeArticle() {
+  document.getElementById('emptyState').style.display = 'flex';
+  document.getElementById('articleBody').style.display = 'none';
+  document.querySelectorAll('.tile, .list-row').forEach(t => t.classList.remove('selected'));
+}
+
+function setMode(mode) {
+  const scroll = document.getElementById('feedScroll');
+  scroll.className = 'feed-scroll mode-' + mode;
+  document.getElementById('btnGrid').classList.toggle('active', mode === 'grid');
+  document.getElementById('btnList').classList.toggle('active', mode === 'list');
+}
+
+function selectSource(el, name) {
+  document.querySelectorAll('.source-row').forEach(r => r.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('feedTitle').textContent = name === 'Alle' ? 'Alle nyheder' : name;
+}
+
+function markAllRead() {
+  document.querySelectorAll('.tile').forEach(t => { t.style.opacity = '0.5'; });
+}
+
+function showSettings() {
+  document.getElementById('settingsSheet').style.display = 'flex';
+}
+function hideSettings() {
+  document.getElementById('settingsSheet').style.display = 'none';
+}
+</script>
+</body>
+</html>
