@@ -34,7 +34,7 @@ struct ArticleCard: View {
 
     private var cardContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if showsImageArea {
+            if store.showThumbnails && article.thumbnailURL != nil {
                 thumbnailArea
             }
             bodySection
