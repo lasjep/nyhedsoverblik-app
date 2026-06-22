@@ -3,7 +3,6 @@ import SwiftUI
 struct SidebarView: View {
     @EnvironmentObject var store: FeedStore
     #if os(macOS)
-    @EnvironmentObject var floatingPanel: FloatingPanelController
     @Environment(\.openWindow) private var openWindow
     private var appVersion: String {
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
@@ -59,14 +58,6 @@ struct SidebarView: View {
                 .help("Indstillinger")
 
                 #if os(macOS)
-                Button {
-                    floatingPanel.toggle(store: store)
-                } label: {
-                    Image(systemName: floatingPanel.isVisible ? "pip.exit" : "pip.enter")
-                        .frame(width: 28, height: 28)
-                }
-                .help(floatingPanel.isVisible ? "Skjul flydende panel (⇧⌘F)" : "Vis flydende panel (⇧⌘F)")
-
                 Button {
                     openWindow(id: "mini-widget")
                 } label: {

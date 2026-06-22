@@ -27,22 +27,22 @@ struct CompactArticleRow: View {
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                         .foregroundStyle(article.seen ? Color.secondary : Color.primary)
-
-                    if store.aiRewrite && displayTitle != article.title {
-                        HStack(spacing: 3) {
-                            Image(systemName: "sparkles").font(.system(size: 9))
-                            Text("AI-omskrevet").font(.system(size: 10))
-                        }
-                        .foregroundStyle(.purple.opacity(0.7))
-                    }
                 }
 
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(article.sourceName)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: 3) {
+                        if store.aiRewrite && displayTitle != article.title {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 9))
+                                .foregroundStyle(.purple.opacity(0.8))
+                                .help("AI-omskrevet overskrift")
+                        }
+                        Text(article.sourceName)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                     if let date = article.publishedAt {
                         TimelineView(.periodic(from: .now, by: 60)) { _ in
                             Text(relativeTime(date))

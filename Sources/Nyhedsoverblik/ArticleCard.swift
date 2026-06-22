@@ -86,20 +86,6 @@ struct ArticleCard: View {
                 .multilineTextAlignment(.leading)
                 .foregroundStyle(article.seen ? .secondary : .primary)
 
-            if store.aiRewrite && displayed != article.title {
-                HStack(spacing: 3) {
-                    Image(systemName: "sparkles").font(.system(size: 9))
-                    Text("AI-omskrevet").font(.system(size: 10))
-                }
-                .foregroundStyle(.purple.opacity(0.7))
-            } else if store.aiRewrite && store.isRewriting {
-                HStack(spacing: 3) {
-                    ProgressView().controlSize(.mini)
-                    Text("Omskriver…").font(.system(size: 10))
-                }
-                .foregroundStyle(.tertiary)
-            }
-
             Spacer(minLength: 0)
 
             HStack(spacing: 4) {
@@ -110,6 +96,14 @@ struct ArticleCard: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                if store.aiRewrite && displayed != article.title {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.purple.opacity(0.8))
+                        .help("AI-omskrevet overskrift")
+                } else if store.aiRewrite && store.isRewriting {
+                    ProgressView().controlSize(.mini)
+                }
                 Spacer(minLength: 4)
                 if let date = article.publishedAt {
                     TimelineView(.periodic(from: .now, by: 60)) { _ in

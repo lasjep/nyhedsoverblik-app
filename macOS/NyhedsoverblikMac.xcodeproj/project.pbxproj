@@ -22,7 +22,6 @@
 		86EFE7E145BB6FAD71D02403 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C9EB34279C6AFDF2B8B0B48D /* WidgetKit.framework */; };
 		909A237C532A1F99839A9B0D /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F439FE776AE4B19AD606279 /* SidebarView.swift */; };
 		9E3FF2D771E14974857477DB /* Keychain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DEB0DFFE2050C47109E3453 /* Keychain.swift */; };
-		A2CB6CD8F16BB2C81A22D16B /* FloatingHeadlinesPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB3DF438B3410D36F8BEA9B6 /* FloatingHeadlinesPanel.swift */; };
 		A4C8429F9F2F6AF1B457DDD7 /* Filters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 982EA1BBC50CE6B4923F5EC9 /* Filters.swift */; };
 		B27B0CD65EC78E9E5BBFDC12 /* WidgetIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = C978BE7248F77CF88E214736 /* WidgetIntents.swift */; };
 		B8D62AEFFA63F7D23A51EEB6 /* HeadlineRewriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F4A0723E8E5982166A506ED /* HeadlineRewriter.swift */; };
@@ -79,7 +78,6 @@
 		A2307E4CE86542095FDD5C2C /* ArticleCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArticleCard.swift; sourceTree = "<group>"; };
 		A4A0F6EB10B6378BC15B1271 /* FeedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedStore.swift; sourceTree = "<group>"; };
 		AAAC7317F660A89551C1C63B /* NyhedsoverblikWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NyhedsoverblikWidget.swift; sourceTree = "<group>"; };
-		AB3DF438B3410D36F8BEA9B6 /* FloatingHeadlinesPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingHeadlinesPanel.swift; sourceTree = "<group>"; };
 		BB5516FD4D3121779884BC29 /* ArticleListRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArticleListRow.swift; sourceTree = "<group>"; };
 		C1E9917CC2092E8C562376D9 /* RSSParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSSParser.swift; sourceTree = "<group>"; };
 		C978BE7248F77CF88E214736 /* WidgetIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetIntents.swift; sourceTree = "<group>"; };
@@ -150,7 +148,6 @@
 				601B9759431A6A1A653DF81B /* FeedConfig.swift */,
 				A4A0F6EB10B6378BC15B1271 /* FeedStore.swift */,
 				982EA1BBC50CE6B4923F5EC9 /* Filters.swift */,
-				AB3DF438B3410D36F8BEA9B6 /* FloatingHeadlinesPanel.swift */,
 				6F4A0723E8E5982166A506ED /* HeadlineRewriter.swift */,
 				7F0A287B04818A939872917A /* HTMLScraper.swift */,
 				2DEB0DFFE2050C47109E3453 /* Keychain.swift */,
@@ -297,7 +294,6 @@
 				025EE88438DCFC9ABD1EC9D7 /* FeedConfig.swift in Sources */,
 				245CC6453144133B42E6B0BC /* FeedStore.swift in Sources */,
 				A4C8429F9F2F6AF1B457DDD7 /* Filters.swift in Sources */,
-				A2CB6CD8F16BB2C81A22D16B /* FloatingHeadlinesPanel.swift in Sources */,
 				0C7A2740BDFF782F41BE7D80 /* HTMLScraper.swift in Sources */,
 				B8D62AEFFA63F7D23A51EEB6 /* HeadlineRewriter.swift in Sources */,
 				9E3FF2D771E14974857477DB /* Keychain.swift in Sources */,

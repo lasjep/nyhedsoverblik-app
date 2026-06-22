@@ -1,6 +1,8 @@
 import Foundation
 
 let defaultFeeds: [FeedSource] = [
+    FeedSource(id: "dr",            name: "DR",             url: "https://www.dr.dk/nyheder/service/feeds/allenyheder",        colorHex: "#e2231a"),
+    FeedSource(id: "tv2",           name: "TV 2",           url: "https://nyheder.tv2.dk/",                                     colorHex: "#0a4f9e", feedType: .scrape),
     FeedSource(id: "eb",            name: "Ekstra Bladet",  url: "https://ekstrabladet.dk/rssfeed/nyheder/",                    colorHex: "#f5a623"),
     FeedSource(id: "berlingske",    name: "Berlingske",     url: "https://www.berlingske.dk/content/rss",                       colorHex: "#1f6f6f"),
     FeedSource(id: "politiken",     name: "Politiken",      url: "https://politiken.dk/rss/senestenyt.rss",                     colorHex: "#c0392b"),

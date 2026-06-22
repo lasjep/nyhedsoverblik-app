@@ -18,6 +18,7 @@ xcodebuild \
     -configuration Release \
     -derivedDataPath "$BUILD_DIR" \
     -destination "platform=macOS" \
+    -allowProvisioningUpdates \
     build \
     | grep -E "^(Build|error:|warning:|✓|→|CompileSwift|Ld )" || true
 

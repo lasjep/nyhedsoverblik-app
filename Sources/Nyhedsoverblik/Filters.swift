@@ -9,6 +9,10 @@ private let sportWords: Set<String> = [
     "pokalen", "ligaen", "vm i", "em i",
 ]
 
+// VM-/EM-sammensætninger ("VM-finale", "EM-kvalifikation") — bindestreg-bundet
+// så det ikke rammer "VM" som forkortelse for "virtual machine" i tech-nyheder.
+private let vmEmCompound = try! NSRegularExpression(pattern: #"\b(vm|em)-\w"#, options: [.caseInsensitive])
+
 private let clickbaitPrefixes = [
     "derfor", "sådan", "se her", "se:", "live:", "afslører",
     "chok", "rasende", "du skal", "her er grunden", "advarsel:", "pas på", "nu sker det",
@@ -41,6 +45,7 @@ func isSport(title: String, url: String, tags: [String] = []) -> Bool {
     if ["/sport", "/fodbold", "/haandbold"].contains(where: { path.contains($0) }) { return true }
     let padded = paddedWords(title)
     if sportWords.contains(where: { padded.contains(" \($0) ") }) { return true }
+    if vmEmCompound.firstMatch(in: title, range: NSRange(title.startIndex..., in: title)) != nil { return true }
     // Tags (article:tag / RSS-kategorier) — fanger fx sportspodcasts hvor
     // hverken titel eller URL afslører emnet. Prefix-match så
     // "Superligaen" rammer "superliga".

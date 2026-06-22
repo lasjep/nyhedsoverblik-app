@@ -50,6 +50,7 @@ enum HTMLScraper {
             #"href="(/[^"]*?/article\d+[^"]*?)""#,           // MediaWatch m.fl.
             #"href="(/[^"]*?-\d{6,}[^"]*?)""#,               // slug med ID
             #"href="(/(?:artikel|article|nyheder|news)/[^"]+?)""#, // /artikel/ /news/ paths
+            #"href="(https?://[^"]*?/\d{4}-\d{2}-\d{2}-[^"]+?)""#, // dato-slug (TV2 m.fl.)
         ]
 
         var seen = Set<String>()
@@ -98,10 +99,21 @@ enum HTMLScraper {
             title = t
         } else { return nil }
 
-        let cleanTitle = title
+        var cleanTitle = title
             .components(separatedBy: .newlines).map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }.joined(separator: " ")
             .htmlDecoded()
+
+        // <title>-fallback indeholder ofte " - Sitenavn" til sidst (når og:title
+        // ligger uden for det hentede byte-range, fx TV2's ~180KB <head>).
+        // Skær det fra hvis det matcher kildens navn.
+        for separator in [" - ", " | ", " — ", " – "] {
+            if cleanTitle.lowercased().hasSuffix("\(separator)\(source.name)".lowercased()) {
+                cleanTitle = String(cleanTitle.dropLast(separator.count + source.name.count))
+                    .trimmingCharacters(in: .whitespaces)
+                break
+            }
+        }
 
         // Kig efter publiceringsdato
         let pubDate = extractDate(from: html)

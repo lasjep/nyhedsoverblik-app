@@ -61,11 +61,13 @@ struct MiniWidgetPanel: View {
             Button {
                 store.markAllSeen()
             } label: {
-                Label("Marker alle læst", systemImage: "checkmark.circle")
+                Label("Marker alle læst", systemImage: "checkmark.circle.fill")
                     .labelStyle(.iconOnly)
-                    .frame(width: 24, height: 22)
+                    .font(.system(size: 16))
+                    .frame(width: 26, height: 22)
             }
             .buttonStyle(.borderless)
+            .foregroundStyle(store.unseenCount() == 0 ? Color.secondary.opacity(0.3) : store.appTheme.accentColor)
             .disabled(store.unseenCount() == 0)
             .help("Marker alle læst")
         }

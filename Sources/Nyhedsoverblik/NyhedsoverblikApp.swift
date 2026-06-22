@@ -5,13 +5,11 @@ import UserNotifications
 @main
 struct NyhedsoverblikApp: App {
     @StateObject private var store = FeedStore()
-    @StateObject private var floatingPanel = FloatingPanelController()
 
     var body: some Scene {
         WindowGroup("Nyhedsoverblik") {
             ContentView()
                 .environmentObject(store)
-                .environmentObject(floatingPanel)
                 .frame(minWidth: 960, minHeight: 640)
                 .tint(store.appTheme.accentColor)
                 .preferredColorScheme(store.appTheme.colorScheme)
@@ -58,13 +56,6 @@ struct NyhedsoverblikApp: App {
 
                 Toggle("Skjul sport", isOn: $store.filterSport)
                 Toggle("Skjul clickbait", isOn: $store.filterClickbait)
-
-                Divider()
-
-                Button(floatingPanel.isVisible ? "Skjul flydende panel" : "Vis flydende panel") {
-                    floatingPanel.toggle(store: store)
-                }
-                .keyboardShortcut("f", modifiers: [.command, .shift])
             }
         }
     }
