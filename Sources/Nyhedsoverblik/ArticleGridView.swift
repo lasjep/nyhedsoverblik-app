@@ -23,7 +23,6 @@ struct ArticleGridView: View {
     // eneste NSResponder-accepterende view i vinduet).
     @FocusState private var listFocused: Bool
     @State private var cursorID: String?
-    @State private var scrollProxy: ScrollViewProxy?
 
     var columns: [GridItem] {
         [GridItem(.adaptive(minimum: store.gridMinWidth, maximum: store.gridMinWidth * 1.6), spacing: 10)]
@@ -66,34 +65,38 @@ struct ArticleGridView: View {
     }
 
     var body: some View {
-        Group {
-            if store.isLoading && store.visibleArticles.isEmpty {
-                loadingView
-            } else if store.visibleArticles.isEmpty {
-                emptyView
-            } else if store.viewMode == .list {
-                articleList
-            } else if store.viewMode == .compact {
-                compactList
-            } else {
-                scrollGrid
+        // ÉN fælles ScrollViewReader om det hele — proxy'en er så garanteret klar
+        // med det samme (ingen afhængighed af .onAppear-timing i tre separate views).
+        ScrollViewReader { proxy in
+            Group {
+                if store.isLoading && store.visibleArticles.isEmpty {
+                    loadingView
+                } else if store.visibleArticles.isEmpty {
+                    emptyView
+                } else if store.viewMode == .list {
+                    articleList
+                } else if store.viewMode == .compact {
+                    compactList
+                } else {
+                    scrollGrid
+                }
             }
+            .toolbar { toolbarContent }
+            #if os(macOS)
+            .searchable(text: $store.searchText, placement: .toolbar, prompt: "Søg i overskrifter")
+            #else
+            .searchable(text: $store.searchText, prompt: "Søg i overskrifter")
+            #endif
+            .focusable()
+            .focusEffectDisabled()
+            .focused($listFocused)
+            .simultaneousGesture(TapGesture().onEnded { listFocused = true })
+            .onAppear { listFocused = true }
+            .onChange(of: store.viewMode) { _, _ in cursorID = nil }
+            .onKeyPress(.downArrow) { moveCursor(by: 1, proxy: proxy); return .handled }
+            .onKeyPress(.upArrow)   { moveCursor(by: -1, proxy: proxy); return .handled }
+            .onKeyPress(.return)    { openCursorArticle(); return .handled }
         }
-        .toolbar { toolbarContent }
-        #if os(macOS)
-        .searchable(text: $store.searchText, placement: .toolbar, prompt: "Søg i overskrifter")
-        #else
-        .searchable(text: $store.searchText, prompt: "Søg i overskrifter")
-        #endif
-        .focusable()
-        .focusEffectDisabled()
-        .focused($listFocused)
-        .simultaneousGesture(TapGesture().onEnded { listFocused = true })
-        .onAppear { listFocused = true }
-        .onChange(of: store.viewMode) { _, _ in cursorID = nil }
-        .onKeyPress(.downArrow) { moveCursor(by: 1); return .handled }
-        .onKeyPress(.upArrow)   { moveCursor(by: -1); return .handled }
-        .onKeyPress(.return)    { openCursorArticle(); return .handled }
     }
 
     // MARK: – Piletasts-navigation
@@ -102,15 +105,13 @@ struct ArticleGridView: View {
         store.viewMode == .grid ? smartSegments.map(\.id) : store.feedItems.map(\.id)
     }
 
-    private func moveCursor(by delta: Int) {
+    private func moveCursor(by delta: Int, proxy: ScrollViewProxy) {
         let ids = navigableIDs
         guard !ids.isEmpty else { return }
         let currentIndex = cursorID.flatMap { ids.firstIndex(of: $0) } ?? -1
         let newIndex = min(max(currentIndex + delta, 0), ids.count - 1)
         cursorID = ids[newIndex]
-        withAnimation(.easeOut(duration: 0.12)) {
-            scrollProxy?.scrollTo(cursorID, anchor: .center)
-        }
+        proxy.scrollTo(cursorID, anchor: .center)
     }
 
     private func openCursorArticle() {
@@ -139,37 +140,34 @@ struct ArticleGridView: View {
         // GeometryReader ØVERST — giver stabil bredde til alle grid-grupper
         GeometryReader { geo in
             let availW = geo.size.width - 24   // minus horisontal padding
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(smartSegments) { segment in
-                            switch segment.kind {
-                            case .imageGroup(let articles):
-                                NonLazyVGrid(articles: articles,
-                                             containerWidth: availW,
-                                             minColWidth: store.gridMinWidth,
-                                             spacing: 10,
-                                             store: store)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(isCursor(segment.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(smartSegments) { segment in
+                        switch segment.kind {
+                        case .imageGroup(let articles):
+                            NonLazyVGrid(articles: articles,
+                                         containerWidth: availW,
+                                         minColWidth: store.gridMinWidth,
+                                         spacing: 10,
+                                         store: store)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(isCursor(segment.id) ? Color.accentColor.opacity(0.12) : Color.clear)
 
-                            case .textRow(let article):
-                                ArticleListRow(article: article)
-                                    .environmentObject(store)
-                                    .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
-                                Divider().padding(.leading, 43)
+                        case .textRow(let article):
+                            ArticleListRow(article: article)
+                                .environmentObject(store)
+                                .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                            Divider().padding(.leading, 43)
 
-                            case .cluster(let cluster):
-                                clusterRow(cluster)
-                                    .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
-                                Divider().padding(.leading, 43)
-                            }
+                        case .cluster(let cluster):
+                            clusterRow(cluster)
+                                .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                            Divider().padding(.leading, 43)
                         }
                     }
-                    .padding(.bottom, 8)
                 }
-                .onAppear { scrollProxy = proxy }
+                .padding(.bottom, 8)
             }
         }
     }
@@ -272,50 +270,44 @@ struct ArticleGridView: View {
     }
 
     private var articleList: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(store.feedItems) { item in
-                        switch item {
-                        case .single(let article):
-                            ArticleListRow(article: article)
-                                .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
-                            Divider().padding(.leading, 43)
-                        case .cluster(let cluster):
-                            clusterRow(cluster)
-                                .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
-                            Divider().padding(.leading, 43)
-                        }
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(store.feedItems) { item in
+                    switch item {
+                    case .single(let article):
+                        ArticleListRow(article: article)
+                            .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                        Divider().padding(.leading, 43)
+                    case .cluster(let cluster):
+                        clusterRow(cluster)
+                            .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                        Divider().padding(.leading, 43)
                     }
                 }
-                .padding(.vertical, 4)
             }
-            .onAppear { scrollProxy = proxy }
+            .padding(.vertical, 4)
         }
     }
 
     private var compactList: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(store.feedItems) { item in
-                        switch item {
-                        case .single(let article):
-                            CompactArticleRow(article: article)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 2)
-                                .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
-                            Divider().padding(.leading, 28)
-                        case .cluster(let cluster):
-                            clusterRow(cluster)
-                                .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
-                            Divider().padding(.leading, 43)
-                        }
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(store.feedItems) { item in
+                    switch item {
+                    case .single(let article):
+                        CompactArticleRow(article: article)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 2)
+                            .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                        Divider().padding(.leading, 28)
+                    case .cluster(let cluster):
+                        clusterRow(cluster)
+                            .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                        Divider().padding(.leading, 43)
                     }
                 }
-                .padding(.vertical, 4)
             }
-            .onAppear { scrollProxy = proxy }
+            .padding(.vertical, 4)
         }
     }
 
