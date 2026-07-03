@@ -15,6 +15,9 @@ struct FeedSource: Identifiable, Hashable, Sendable {
     var filterCommercial: Bool = false
     var feedType: FeedType = .rss
     var isCustom: Bool = false    // brugertilføjet kilde
+    // Kombi: RSS-kilde der OGSÅ scraper denne forside og merger (dedup på id).
+    // RSS giver "seneste nyt"-kronologi, forsiden giver redaktionens udvalg.
+    var scrapePageURL: String? = nil
 
     var allURLs: [String] { [url] + additionalURLs }
     var color: Color { Color(hex: colorHex) ?? .gray }

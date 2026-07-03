@@ -385,16 +385,37 @@ final class FeedStore: ObservableObject {
 
     // Hent én kilde (bruges efter tilføjelse)
     func refreshSource(_ source: FeedSource) async {
-        let outcome: FetchOutcome
-        if source.feedType == .scrape {
-            let arts = await HTMLScraper.scrape(source: source)
-            outcome = FetchOutcome(articles: arts,
-                                   errorText: arts.isEmpty ? "Ingen artikler fundet" : nil)
-        } else {
-            outcome = await Self.fetchAllURLs(source: source, etag: nil, lastModified: nil)
-        }
+        let outcome = await Self.fetchSource(source: source, etag: nil, lastModified: nil)
         apply(outcome: outcome, for: source.id)
         rebuild()
+    }
+
+    // Fælles dispatch: scrape, RSS eller kombi (RSS + forside-scrape merged)
+    nonisolated static func fetchSource(source: FeedSource,
+                                        etag: String?,
+                                        lastModified: String?) async -> FetchOutcome {
+        if source.feedType == .scrape {
+            let arts = await HTMLScraper.scrape(source: source)
+            return FetchOutcome(articles: arts,
+                                errorText: arts.isEmpty ? "Ingen artikler fundet" : nil)
+        }
+        guard let pageURL = source.scrapePageURL else {
+            return await fetchAllURLs(source: source, etag: etag, lastModified: lastModified)
+        }
+        // Kombi: RSS og forside-scrape parallelt, dedup på artikel-id.
+        // Conditional GET slås fra — et 304 på RSS-delen ville ellers skjule
+        // at forsiden har flyttet rundt på artiklerne.
+        let scrapeSource = FeedSource(id: source.id, name: source.name, url: pageURL,
+                                      colorHex: source.colorHex, feedType: .scrape)
+        async let rssTask = fetchAllURLs(source: source, etag: nil, lastModified: nil)
+        async let scrapeTask = HTMLScraper.scrape(source: scrapeSource)
+        let (rss, scraped) = await (rssTask, scrapeTask)
+        var seen = Set<String>()
+        let merged = (rss.articles + scraped)
+            .filter { seen.insert($0.id).inserted }
+            .sorted { ($0.publishedAt ?? .distantPast) > ($1.publishedAt ?? .distantPast) }
+        return FetchOutcome(articles: merged,
+                            errorText: merged.isEmpty ? (rss.errorText ?? "Ingen artikler fundet") : nil)
     }
 
     // MARK: – Refresh
@@ -425,13 +446,9 @@ final class FeedStore: ObservableObject {
             for source in activeSources {
                 let cached = cacheSnapshot[source.id]
                 group.addTask {
-                    if source.feedType == .scrape {
-                        let arts = await HTMLScraper.scrape(source: source)
-                        return (source.id, FetchOutcome(
-                            articles: arts,
-                            errorText: arts.isEmpty ? "Ingen artikler fundet" : nil))
-                    }
-                    return (source.id, await Self.fetchAllURLs(source: source, etag: cached?.etag, lastModified: cached?.lastModified))
+                    (source.id, await Self.fetchSource(source: source,
+                                                       etag: cached?.etag,
+                                                       lastModified: cached?.lastModified))
                 }
             }
             for await (id, outcome) in group {

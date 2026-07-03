@@ -23,8 +23,9 @@ enum HTMLScraper {
         let links = extractArticleLinks(from: html, baseURL: baseURL, sourceURL: source.url)
         guard !links.isEmpty else { return [] }
 
-        // Hent titler parallelt (max 30 — forsider som jp.dk har 60+ artikler)
-        let topLinks = Array(links.prefix(30))
+        // Hent titler parallelt — forsider som jp.dk har 70+ artikler; kun ~8KB
+        // hentes pr. artikel, og URLSession begrænser selv samtidige forbindelser
+        let topLinks = Array(links.prefix(80))
         let articles = await withTaskGroup(of: Article?.self) { group in
             for link in topLinks {
                 group.addTask {
@@ -51,6 +52,10 @@ enum HTMLScraper {
             #"href="(/[^"]*?-\d{6,}[^"]*?)""#,               // slug med ID
             #"href="(/(?:artikel|article|nyheder|news)/[^"]+?)""#, // /artikel/ /news/ paths
             #"href="(https?://[^"]*?/\d{4}-\d{2}-\d{2}-[^"]+?)""#, // dato-slug (TV2 m.fl.)
+            // /sektion/lang-slug uden ID (Berlingske m.fl.) — kræver 4+ ord i
+            // slug'en så nav-/sektionslinks ikke fanges; sidste udvej, prøves
+            // kun hvis ID-mønstrene ovenfor ikke gav nok
+            #"href="(/[a-zæøå-]+/(?:[a-zæøå0-9]+-){3,}[a-zæøå0-9]+/?)""#,
         ]
 
         var seen = Set<String>()
@@ -71,7 +76,7 @@ enum HTMLScraper {
                 seen.insert(full)
                 if let url = URL(string: full) { urls.append(url) }
             }
-            if urls.count >= 40 { break }
+            if urls.count >= 80 { break }
         }
         return urls
     }
