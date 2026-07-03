@@ -110,8 +110,11 @@ struct ArticleGridView: View {
         guard !ids.isEmpty else { return }
         let currentIndex = cursorID.flatMap { ids.firstIndex(of: $0) } ?? -1
         let newIndex = min(max(currentIndex + delta, 0), ids.count - 1)
-        cursorID = ids[newIndex]
-        proxy.scrollTo(cursorID, anchor: .center)
+        // VIGTIGT: scrollTo skal have en ikke-optional String — Optional("x")
+        // hasher anderledes end "x" og matcher aldrig rækkernes .id()
+        let newID = ids[newIndex]
+        cursorID = newID
+        proxy.scrollTo(newID, anchor: .center)
     }
 
     private func openCursorArticle() {
@@ -153,16 +156,19 @@ struct ArticleGridView: View {
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
                             .background(isCursor(segment.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                            .id(segment.id)
 
                         case .textRow(let article):
                             ArticleListRow(article: article)
                                 .environmentObject(store)
                                 .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                                .id(segment.id)
                             Divider().padding(.leading, 43)
 
                         case .cluster(let cluster):
                             clusterRow(cluster)
                                 .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                                .id(segment.id)
                             Divider().padding(.leading, 43)
                         }
                     }
@@ -277,10 +283,12 @@ struct ArticleGridView: View {
                     case .single(let article):
                         ArticleListRow(article: article)
                             .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                            .id(item.id)
                         Divider().padding(.leading, 43)
                     case .cluster(let cluster):
                         clusterRow(cluster)
                             .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                            .id(item.id)
                         Divider().padding(.leading, 43)
                     }
                 }
@@ -299,10 +307,12 @@ struct ArticleGridView: View {
                             .padding(.horizontal, 12)
                             .padding(.vertical, 2)
                             .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                            .id(item.id)
                         Divider().padding(.leading, 28)
                     case .cluster(let cluster):
                         clusterRow(cluster)
                             .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                            .id(item.id)
                         Divider().padding(.leading, 43)
                     }
                 }
