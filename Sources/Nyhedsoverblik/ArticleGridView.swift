@@ -17,6 +17,14 @@ struct ArticleGridView: View {
     @Environment(\.openWindow) private var openWindow
     @State private var expandedClusters: Set<String> = []
 
+    // Piletasts-navigation i listen — uafhængig af hvilken artikel der er åben i browseren,
+    // så piletasterne kan flytte "cursoren" og scrolle listen uden at det tvinger fokus
+    // væk fra WKWebView (som ellers stjæler alle piletryk permanent, da den er den
+    // eneste NSResponder-accepterende view i vinduet).
+    @FocusState private var listFocused: Bool
+    @State private var cursorID: String?
+    @State private var scrollProxy: ScrollViewProxy?
+
     var columns: [GridItem] {
         [GridItem(.adaptive(minimum: store.gridMinWidth, maximum: store.gridMinWidth * 1.6), spacing: 10)]
     }
@@ -77,7 +85,53 @@ struct ArticleGridView: View {
         #else
         .searchable(text: $store.searchText, prompt: "Søg i overskrifter")
         #endif
+        .focusable()
+        .focusEffectDisabled()
+        .focused($listFocused)
+        .simultaneousGesture(TapGesture().onEnded { listFocused = true })
+        .onAppear { listFocused = true }
+        .onChange(of: store.viewMode) { _, _ in cursorID = nil }
+        .onKeyPress(.downArrow) { moveCursor(by: 1); return .handled }
+        .onKeyPress(.upArrow)   { moveCursor(by: -1); return .handled }
+        .onKeyPress(.return)    { openCursorArticle(); return .handled }
     }
+
+    // MARK: – Piletasts-navigation
+
+    private var navigableIDs: [String] {
+        store.viewMode == .grid ? smartSegments.map(\.id) : store.feedItems.map(\.id)
+    }
+
+    private func moveCursor(by delta: Int) {
+        let ids = navigableIDs
+        guard !ids.isEmpty else { return }
+        let currentIndex = cursorID.flatMap { ids.firstIndex(of: $0) } ?? -1
+        let newIndex = min(max(currentIndex + delta, 0), ids.count - 1)
+        cursorID = ids[newIndex]
+        withAnimation(.easeOut(duration: 0.12)) {
+            scrollProxy?.scrollTo(cursorID, anchor: .center)
+        }
+    }
+
+    private func openCursorArticle() {
+        guard let id = cursorID else { return }
+        if store.viewMode == .grid {
+            guard let seg = smartSegments.first(where: { $0.id == id }) else { return }
+            switch seg.kind {
+            case .imageGroup(let arts): if let first = arts.first { store.openArticle(first) }
+            case .textRow(let a):       store.openArticle(a)
+            case .cluster(let c):       store.openArticle(c.articles[0])
+            }
+        } else {
+            guard let item = store.feedItems.first(where: { $0.id == id }) else { return }
+            switch item {
+            case .single(let a):  store.openArticle(a)
+            case .cluster(let c): store.openArticle(c.articles[0])
+            }
+        }
+    }
+
+    private func isCursor(_ id: String) -> Bool { cursorID == id }
 
     // MARK: – Indholds-views
 
@@ -85,31 +139,37 @@ struct ArticleGridView: View {
         // GeometryReader ØVERST — giver stabil bredde til alle grid-grupper
         GeometryReader { geo in
             let availW = geo.size.width - 24   // minus horisontal padding
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(smartSegments) { segment in
-                        switch segment.kind {
-                        case .imageGroup(let articles):
-                            NonLazyVGrid(articles: articles,
-                                         containerWidth: availW,
-                                         minColWidth: store.gridMinWidth,
-                                         spacing: 10,
-                                         store: store)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(smartSegments) { segment in
+                            switch segment.kind {
+                            case .imageGroup(let articles):
+                                NonLazyVGrid(articles: articles,
+                                             containerWidth: availW,
+                                             minColWidth: store.gridMinWidth,
+                                             spacing: 10,
+                                             store: store)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(isCursor(segment.id) ? Color.accentColor.opacity(0.12) : Color.clear)
 
-                        case .textRow(let article):
-                            ArticleListRow(article: article)
-                                .environmentObject(store)
-                            Divider().padding(.leading, 43)
+                            case .textRow(let article):
+                                ArticleListRow(article: article)
+                                    .environmentObject(store)
+                                    .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                                Divider().padding(.leading, 43)
 
-                        case .cluster(let cluster):
-                            clusterRow(cluster)
-                            Divider().padding(.leading, 43)
+                            case .cluster(let cluster):
+                                clusterRow(cluster)
+                                    .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                                Divider().padding(.leading, 43)
+                            }
                         }
                     }
+                    .padding(.bottom, 8)
                 }
-                .padding(.bottom, 8)
+                .onAppear { scrollProxy = proxy }
             }
         }
     }
@@ -212,40 +272,50 @@ struct ArticleGridView: View {
     }
 
     private var articleList: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(store.feedItems) { item in
-                    switch item {
-                    case .single(let article):
-                        ArticleListRow(article: article)
-                        Divider().padding(.leading, 43)
-                    case .cluster(let cluster):
-                        clusterRow(cluster)
-                        Divider().padding(.leading, 43)
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(store.feedItems) { item in
+                        switch item {
+                        case .single(let article):
+                            ArticleListRow(article: article)
+                                .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                            Divider().padding(.leading, 43)
+                        case .cluster(let cluster):
+                            clusterRow(cluster)
+                                .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                            Divider().padding(.leading, 43)
+                        }
                     }
                 }
+                .padding(.vertical, 4)
             }
-            .padding(.vertical, 4)
+            .onAppear { scrollProxy = proxy }
         }
     }
 
     private var compactList: some View {
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                ForEach(store.feedItems) { item in
-                    switch item {
-                    case .single(let article):
-                        CompactArticleRow(article: article)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 2)
-                        Divider().padding(.leading, 28)
-                    case .cluster(let cluster):
-                        clusterRow(cluster)
-                        Divider().padding(.leading, 43)
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(store.feedItems) { item in
+                        switch item {
+                        case .single(let article):
+                            CompactArticleRow(article: article)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 2)
+                                .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                            Divider().padding(.leading, 28)
+                        case .cluster(let cluster):
+                            clusterRow(cluster)
+                                .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                            Divider().padding(.leading, 43)
+                        }
                     }
                 }
+                .padding(.vertical, 4)
             }
-            .padding(.vertical, 4)
+            .onAppear { scrollProxy = proxy }
         }
     }
 
