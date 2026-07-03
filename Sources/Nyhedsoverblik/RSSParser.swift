@@ -69,7 +69,12 @@ final class RSSParser: NSObject, XMLParserDelegate, @unchecked Sendable {
         if inItem {
             let txt = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
             switch local {
-            case "title":   current["title"] = txt
+            case "title":
+                // Kun det u-prefixede <title> — media:title er billedtekst
+                // (fx TV Technology: "ViewNexa logo") og må ikke overskrive
+                // artiklens titel; prefixet er strippet i `local`, så tjek
+                // det fulde elementnavn
+                if elementName.lowercased() == "title" { current["title"] = txt }
             case "link":    if current["link"] == nil { current["link"] = txt }
             case "id":      if current["link"] == nil { current["link"] = txt }
             case "pubdate", "published", "updated", "date":
