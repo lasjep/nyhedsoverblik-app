@@ -14,6 +14,9 @@ enum HeadlineRewriter {
         Du er en redaktør der omskriver sensationelle og clickbait-agtige nyhedsoverskrifter \
         til neutrale, informative sætninger. Bevar fakta og kildeangivelser. \
         Fjern overdrivelser, udråbstegn, STORE BOGSTAVER og manipulative formuleringer. \
+        VIGTIGT: Bevar hver overskrifts originale sprog — danske overskrifter forbliver på dansk, \
+        engelske på engelsk. Oversæt ALDRIG. Listen kan indeholde blandede sprog; \
+        vurder sproget for hver enkelt overskrift, ikke for listen som helhed. \
         Svar KUN med JSON-objektet, ingen forklaringer.
         """
 
