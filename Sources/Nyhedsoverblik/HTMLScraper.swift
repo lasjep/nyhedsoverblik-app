@@ -39,7 +39,14 @@ enum HTMLScraper {
             return result
         }
 
-        return articles.sorted { ($0.publishedAt ?? .distantPast) > ($1.publishedAt ?? .distantPast) }
+        // Alders-værn: service-/arkivsider der slipper gennem link-mønstrene har
+        // også og:-metadata og ligner artikler — men er typisk måneder/år gamle.
+        // Forsiden er til aktuelt stof; behold kun det seneste (udateret = behold,
+        // datoen kan bare mangle i de første 8KB)
+        let cutoff = Date().addingTimeInterval(-30 * 86400)
+        return articles
+            .filter { ($0.publishedAt ?? Date()) > cutoff }
+            .sorted { ($0.publishedAt ?? .distantPast) > ($1.publishedAt ?? .distantPast) }
     }
 
     // MARK: – Link-ekstraktion
@@ -69,9 +76,11 @@ enum HTMLScraper {
                 let cleanPath = path.components(separatedBy: "?")[0]
                     .components(separatedBy: "#")[0]
                 let full = cleanPath.hasPrefix("http") ? cleanPath : baseURL + cleanPath
-                // Filtrer navigation, tags, kategorier fra
+                // Filtrer navigation, tags, kategorier og service-sider fra
+                // (/om/ og /velkommen/: JP's kontakt-/pressesider bruger også ECE-URL'er)
                 guard !full.contains("/tag/"), !full.contains("/kategori/"),
                       !full.contains("/search"), !full.contains("/forfatter"),
+                      !full.contains("/om/"), !full.contains("/velkommen/"),
                       !seen.contains(full) else { continue }
                 seen.insert(full)
                 if let url = URL(string: full) { urls.append(url) }
