@@ -43,6 +43,9 @@ private func paddedWords(_ s: String) -> String {
 func isSport(title: String, url: String, tags: [String] = []) -> Bool {
     let path = URL(string: url)?.path.lowercased() ?? ""
     if ["/sport", "/fodbold", "/haandbold"].contains(where: { path.contains($0) }) { return true }
+    // Sports-subdomæner (sport.tv2.dk m.fl.) — stien afslører ikke emnet dér
+    if let host = URL(string: url)?.host?.lowercased(),
+       host.hasPrefix("sport.") || host.contains(".sport.") { return true }
     let padded = paddedWords(title)
     if sportWords.contains(where: { padded.contains(" \($0) ") }) { return true }
     if vmEmCompound.firstMatch(in: title, range: NSRange(title.startIndex..., in: title)) != nil { return true }

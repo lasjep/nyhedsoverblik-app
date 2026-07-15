@@ -81,6 +81,7 @@ enum HTMLScraper {
                 guard !full.contains("/tag/"), !full.contains("/kategori/"),
                       !full.contains("/search"), !full.contains("/forfatter"),
                       !full.contains("/om/"), !full.contains("/velkommen/"),
+                      !full.contains("/reel/"),   // TV2's lodrette video-shorts — ikke artikler
                       !seen.contains(full) else { continue }
                 seen.insert(full)
                 if let url = URL(string: full) { urls.append(url) }
