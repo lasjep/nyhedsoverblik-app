@@ -13,13 +13,11 @@ struct ArticleListRow: View {
 
     private var fontSize: Double { store.listFontSize }
 
-    // Luften skalerer med skriftstørrelsen — ved små fonte pakkes rækkerne helt tæt
-    // (11pt → 1pt luft, 14pt → 4pt, 20pt → 10pt)
-    private var vPad: Double { max(1, (fontSize - 11) + 1) }
+    // Luften skalerer KONTINUERLIGT med skriftstørrelsen — ingen tærskel-spring
+    // (11pt → 1pt luft, 14pt → 2.5pt, 20pt → 5.5pt)
+    private var vPad: Double { max(1, (fontSize - 11) * 0.5 + 1) }
     // Baren må ALDRIG være højere end én tekstlinje — ellers låser den rækkehøjden
     private var barHeight: Double { fontSize * 1.3 }
-    // Under 13pt: kilde og tid på ÉN linje så rækkehøjden styres af overskriften
-    private var compactMeta: Bool { fontSize < 13 }
 
     var body: some View {
         Button {
@@ -44,7 +42,7 @@ struct ArticleListRow: View {
 
                 Spacer(minLength: 16)
 
-                // Kilde + tid — én linje ved små fonte, ellers to
+                // Kilde + tid på én linje
                 metaView
                     .fixedSize(horizontal: true, vertical: false)  // højre kolonne: brug sin naturlige bredde
             }
@@ -59,38 +57,20 @@ struct ArticleListRow: View {
         .onHover { isHovered = $0 }
     }
 
-    @ViewBuilder
+    // Altid ÉN linje — to caption-linjer (~26pt) ville låse rækkehøjden
+    // uanset hvor lille overskriften er
     private var metaView: some View {
-        if compactMeta {
-            HStack(spacing: 4) {
-                Circle().fill(sourceColor).frame(width: 5, height: 5)
-                Text(article.sourceName)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                if let date = article.publishedAt {
-                    TimelineView(.periodic(from: .now, by: 60)) { _ in
-                        Text("· \(relativeTime(date))")
-                            .font(.caption2.monospacedDigit())
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-            }
-        } else {
-            VStack(alignment: .trailing, spacing: 2) {
-                HStack(spacing: 4) {
-                    Circle().fill(sourceColor).frame(width: 6, height: 6)
-                    Text(article.sourceName)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                if let date = article.publishedAt {
-                    TimelineView(.periodic(from: .now, by: 60)) { _ in
-                        Text(relativeTime(date))
-                            .font(.caption2.monospacedDigit())
-                            .foregroundStyle(.tertiary)
-                    }
+        HStack(spacing: 4) {
+            Circle().fill(sourceColor).frame(width: 5, height: 5)
+            Text(article.sourceName)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            if let date = article.publishedAt {
+                TimelineView(.periodic(from: .now, by: 60)) { _ in
+                    Text("· \(relativeTime(date))")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.tertiary)
                 }
             }
         }

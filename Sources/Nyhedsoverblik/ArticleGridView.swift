@@ -146,15 +146,8 @@ struct ArticleGridView: View {
 
     private func isCursor(_ id: String) -> Bool { cursorID == id }
 
-    // Ved små fonte droppes dividerne — de "spiser" den tætte pakning
-    private var tightRows: Bool { store.listFontSize < 13 }
-
-    @ViewBuilder
-    private func rowDivider(leading: CGFloat = 43) -> some View {
-        if !tightRows {
-            Divider().padding(.leading, leading)
-        }
-    }
+    // Rækkeluft der glider kontinuerligt med skriftstørrelsen — ingen tærskel-spring
+    private var rowPad: Double { max(3, (store.listFontSize - 11) * 0.5 + 3) }
 
     // MARK: – Indholds-views
 
@@ -182,13 +175,11 @@ struct ArticleGridView: View {
                                 .environmentObject(store)
                                 .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
                                 .id(segment.id)
-                            rowDivider()
 
                         case .cluster(let cluster):
                             clusterRow(cluster)
                                 .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
                                 .id(segment.id)
-                            rowDivider()
                         }
                     }
                 }
@@ -272,7 +263,7 @@ struct ArticleGridView: View {
                     .buttonStyle(.plain)
                     .padding(.leading, 6)
                 }
-                .padding(.vertical, tightRows ? 3 : 9)
+                .padding(.vertical, rowPad)
                 .padding(.horizontal, 14)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -283,7 +274,6 @@ struct ArticleGridView: View {
             if expanded {
                 VStack(spacing: 0) {
                     ForEach(cluster.articles.dropFirst()) { article in
-                        rowDivider()
                         ArticleListRow(article: article)
                             .environmentObject(store)
                             .padding(.leading, 20)  // indrykket for at vise hierarki
@@ -303,12 +293,10 @@ struct ArticleGridView: View {
                         ArticleListRow(article: article)
                             .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
                             .id(item.id)
-                        rowDivider()
                     case .cluster(let cluster):
                         clusterRow(cluster)
                             .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
                             .id(item.id)
-                        rowDivider()
                     }
                 }
             }
@@ -327,12 +315,10 @@ struct ArticleGridView: View {
                             .padding(.vertical, 2)
                             .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
                             .id(item.id)
-                        rowDivider(leading: 28)
                     case .cluster(let cluster):
                         clusterRow(cluster)
                             .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
                             .id(item.id)
-                        rowDivider()
                     }
                 }
             }
@@ -360,7 +346,6 @@ struct ArticleGridView: View {
                         ForEach(group.articles) { article in
                             ArticleListRow(article: article)
                                 .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
-                            rowDivider()
                         }
                     } header: {
                         themeHeader(group.theme,
@@ -386,7 +371,7 @@ struct ArticleGridView: View {
             Spacer()
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, tightRows ? 4 : 8)
+        .padding(.vertical, max(4, store.listFontSize * 0.4))
         .background(.bar)
     }
 
