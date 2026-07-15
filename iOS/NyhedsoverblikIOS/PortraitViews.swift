@@ -226,7 +226,49 @@ struct PortraitRootView: View {
                     .padding(.bottom, 14)
                 }
                 .frame(height: 400)
+
+            case .themes:
+                ScrollView {
+                    LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+                        ForEach(themedQueue, id: \.theme) { group in
+                            Section {
+                                ForEach(group.articles) { article in
+                                    ArticleListRow(article: article)
+                                    Divider().padding(.leading, 43)
+                                }
+                            } header: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: group.theme.icon)
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(Color.accentColor)
+                                    Text(group.theme.displayName)
+                                        .font(.system(size: 13, weight: .bold, design: .serif))
+                                    Text("\(group.articles.count)")
+                                        .font(.caption2.monospacedDigit())
+                                        .foregroundStyle(.secondary)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 6)
+                                .background(.bar)
+                            }
+                        }
+                    }
+                    .padding(.bottom, 14)
+                }
+                .frame(height: 400)
             }
+        }
+    }
+
+    // Artikler i køen grupperet efter tema (fast rækkefølge, tomme temaer udelades)
+    private var themedQueue: [(theme: NewsTheme, articles: [Article])] {
+        let grouped = Dictionary(grouping: queueArticles) {
+            classifyTheme(url: $0.id, sourceID: $0.sourceID, tags: $0.tags)
+        }
+        return NewsTheme.allCases.compactMap { theme in
+            guard let arts = grouped[theme], !arts.isEmpty else { return nil }
+            return (theme, arts)
         }
     }
 
@@ -285,6 +327,7 @@ struct PortraitRootView: View {
             miniModeButton(.grid, "square.grid.2x2")
             miniModeButton(.list, "list.bullet.rectangle")
             miniModeButton(.compact, "list.dash")
+            miniModeButton(.themes, "rectangle.3.group")
         }
         .padding(3)
         .background(.thinMaterial, in: Capsule())
@@ -391,6 +434,7 @@ struct ViewModeBand: View {
         (.grid,    "square.grid.2x2",       "Galleri"),
         (.list,    "list.bullet.rectangle", "Liste"),
         (.compact, "list.dash",             "Kompakt"),
+        (.themes,  "rectangle.3.group",     "Temaer"),
     ]
 
     var body: some View {

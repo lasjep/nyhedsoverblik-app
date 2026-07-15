@@ -194,6 +194,36 @@ let wc = FeedStore.titleWords("Ny MacBook Pro med M5-chip")
 check(FeedStore.titleSimilarity(wa, wb) >= 0.42, "ens overskrifter over tærskel")
 check(FeedStore.titleSimilarity(wa, wc) < 0.42, "forskellige under tærskel")
 
+// MARK: – Tema-klassificering
+
+print("\n— Tema-klassificering")
+check(classifyTheme(url: "https://www.dr.dk/nyheder/indland/ny-bro-aabner", sourceID: "dr") == .indland,
+      "DR /indland/ → indland")
+check(classifyTheme(url: "https://www.dr.dk/nyheder/udland/valg-i-frankrig", sourceID: "dr") == .udland,
+      "DR /udland/ → udland")
+check(classifyTheme(url: "https://jp.dk/politik/ECE123/finanslov", sourceID: "jp") == .politik,
+      "JP /politik/ → politik")
+check(classifyTheme(url: "https://www.berlingske.dk/danmark/nyt-sygehus", sourceID: "berlingske") == .indland,
+      "Berlingske /danmark/ → indland")
+check(classifyTheme(url: "https://www.berlingske.dk/internationalt/topmoede", sourceID: "berlingske") == .udland,
+      "Berlingske /internationalt/ → udland")
+check(classifyTheme(url: "https://www.macrumors.com/2026/07/15/some-apple-story/", sourceID: "macrumors") == .tech,
+      "MacRumors → tech (kildestandard)")
+check(classifyTheme(url: "https://www.nytimes.com/2026/07/14/world/europe/nato.html", sourceID: "nyt") == .udland,
+      "NYT world → udland")
+check(classifyTheme(url: "https://www.nytimes.com/2026/07/14/technology/ai-chips.html", sourceID: "nyt") == .tech,
+      "NYT technology → tech (sti før kildestandard)")
+check(classifyTheme(url: "https://ekstrabladet.dk/nyheder/samfundet/opdateret-sag", sourceID: "eb") == .indland,
+      "EB /samfund → indland")
+check(classifyTheme(url: "https://borsen.dk/nyheder/virksomheder/stort-opkoeb", sourceID: "borsen") == .andet,
+      "Børsen virksomheder → andet")
+check(classifyTheme(url: "https://www.dr.dk/nyheder/seneste/kort-nyt", sourceID: "dr",
+                    tags: ["Politik"]) == .politik,
+      "tag 'Politik' → politik")
+check(classifyTheme(url: "https://example.dk/artikel/x", sourceID: "custom1",
+                    tags: ["Italien"]) == .andet,
+      "tag 'Italien' rammer ikke 'it'-ordet")
+
 // MARK: – Resultat
 
 print("\n══════════════════════════════")

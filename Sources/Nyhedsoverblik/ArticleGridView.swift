@@ -77,6 +77,8 @@ struct ArticleGridView: View {
                     articleList
                 } else if store.viewMode == .compact {
                     compactList
+                } else if store.viewMode == .themes {
+                    themesList
                 } else {
                     scrollGrid
                 }
@@ -102,7 +104,11 @@ struct ArticleGridView: View {
     // MARK: – Piletasts-navigation
 
     private var navigableIDs: [String] {
-        store.viewMode == .grid ? smartSegments.map(\.id) : store.feedItems.map(\.id)
+        switch store.viewMode {
+        case .grid:   return smartSegments.map(\.id)
+        case .themes: return themedGroups.flatMap { $0.articles.map(\.id) }
+        default:      return store.feedItems.map(\.id)
+        }
     }
 
     private func moveCursor(by delta: Int, proxy: ScrollViewProxy) {
@@ -119,14 +125,17 @@ struct ArticleGridView: View {
 
     private func openCursorArticle() {
         guard let id = cursorID else { return }
-        if store.viewMode == .grid {
+        switch store.viewMode {
+        case .grid:
             guard let seg = smartSegments.first(where: { $0.id == id }) else { return }
             switch seg.kind {
             case .imageGroup(let arts): if let first = arts.first { store.openArticle(first) }
             case .textRow(let a):       store.openArticle(a)
             case .cluster(let c):       store.openArticle(c.articles[0])
             }
-        } else {
+        case .themes:
+            if let a = store.visibleArticles.first(where: { $0.id == id }) { store.openArticle(a) }
+        default:
             guard let item = store.feedItems.first(where: { $0.id == id }) else { return }
             switch item {
             case .single(let a):  store.openArticle(a)
@@ -321,6 +330,56 @@ struct ArticleGridView: View {
         }
     }
 
+    // MARK: – Temaer
+
+    private var themedGroups: [(theme: NewsTheme, articles: [Article])] {
+        let grouped = Dictionary(grouping: store.visibleArticles) {
+            classifyTheme(url: $0.id, sourceID: $0.sourceID, tags: $0.tags)
+        }
+        return NewsTheme.allCases.compactMap { theme in
+            guard let arts = grouped[theme], !arts.isEmpty else { return nil }
+            return (theme, arts)
+        }
+    }
+
+    private var themesList: some View {
+        ScrollView {
+            LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+                ForEach(themedGroups, id: \.theme) { group in
+                    Section {
+                        ForEach(group.articles) { article in
+                            ArticleListRow(article: article)
+                                .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                            Divider().padding(.leading, 43)
+                        }
+                    } header: {
+                        themeHeader(group.theme,
+                                    total: group.articles.count,
+                                    unseen: group.articles.filter { !$0.seen }.count)
+                    }
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    private func themeHeader(_ theme: NewsTheme, total: Int, unseen: Int) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: theme.icon)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+            Text(theme.displayName)
+                .font(.system(size: 15, weight: .bold, design: .serif))
+            Text(unseen > 0 ? "\(unseen) ulæste af \(total)" : "\(total)")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+            Spacer()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(.bar)
+    }
+
     private var loadingView: some View {
         VStack(spacing: 12) {
             ProgressView()
@@ -371,6 +430,7 @@ struct ArticleGridView: View {
                     Image(systemName: "square.grid.2x2").tag(ViewMode.grid)
                     Image(systemName: "list.bullet.rectangle").tag(ViewMode.list)
                     Image(systemName: "list.dash").tag(ViewMode.compact)
+                    Image(systemName: "rectangle.3.group").tag(ViewMode.themes)
                 }
                 .pickerStyle(.segmented)
             }
@@ -448,6 +508,8 @@ struct ArticleGridView: View {
             modeBtn(mode: .list,    icon: "list.bullet.rectangle", help: "Liste")
             Divider().frame(height: 18)
             modeBtn(mode: .compact, icon: "list.dash",         help: "Kompakt")
+            Divider().frame(height: 18)
+            modeBtn(mode: .themes,  icon: "rectangle.3.group", help: "Temaer")
         }
         .buttonStyle(.borderless)
         .background(Color.platformControlBackground, in: RoundedRectangle(cornerRadius: 6))

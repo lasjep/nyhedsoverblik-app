@@ -6,6 +6,7 @@ enum ViewMode: String, CaseIterable {
     case grid    = "grid"
     case list    = "list"
     case compact = "compact"
+    case themes  = "themes"
 }
 
 enum AppTheme: String, CaseIterable, Identifiable {
