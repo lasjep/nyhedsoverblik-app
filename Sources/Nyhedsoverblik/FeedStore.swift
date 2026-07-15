@@ -102,6 +102,9 @@ final class FeedStore: ObservableObject {
     @Published var apiKey: String = ""
     @Published var rewrittenTitles: [String: String] = [:]   // original → rewritten
     @Published var isRewriting = false
+    // Titler AI'en har flagget som sport — supplerer ordliste-filteret i isSport(),
+    // der ikke kender atletnavne ("Pogacar vinder igen" har hverken sport-ord eller -URL)
+    private var aiSportTitles: Set<String> = []
 
     // Breaking news
     @Published var breakingNewsEnabled: Bool = false
@@ -119,6 +122,7 @@ final class FeedStore: ObservableObject {
     private var seenOrder: [String] = []
     private let seenFileURL: URL
     private let rewrittenFileURL: URL
+    private let aiSportFileURL: URL
     private let notifiedFileURL: URL
     private let customSourcesFileURL: URL
 
@@ -151,11 +155,13 @@ final class FeedStore: ObservableObject {
         #endif
         seenFileURL = dir.appendingPathComponent("seen.json")
         rewrittenFileURL = dir.appendingPathComponent("rewritten.json")
+        aiSportFileURL = dir.appendingPathComponent("aisport.json")
         notifiedFileURL = dir.appendingPathComponent("notified.json")
         customSourcesFileURL = dir.appendingPathComponent("custom_sources.json")
         loadSeen()
         loadNotified()
         loadRewritten()
+        loadAISport()
         loadPrefs()
         loadCustomSources()
         setupPipelines()
@@ -240,7 +246,8 @@ final class FeedStore: ObservableObject {
         for src in sources {
             guard let raw = rawBySource[src.id] else { continue }
             dict[src.id] = raw.compactMap { a in
-                if filterSport && isSport(title: a.title, url: a.id, tags: a.tags) { return nil }
+                if filterSport && (isSport(title: a.title, url: a.id, tags: a.tags)
+                                   || aiSportTitles.contains(a.title)) { return nil }
                 if filterClickbait && clickbaitScore(title: a.title) >= 5 { return nil }
                 if src.filterCommercial && isCommercial(title: a.title) { return nil }
                 var copy = a
@@ -531,11 +538,21 @@ final class FeedStore: ObservableObject {
         }
         for batch in batches {
             if let results = await HeadlineRewriter.rewrite(batch, apiKey: apiKey) {
-                for (orig, rewritten) in results { rewrittenTitles[orig] = rewritten }
+                var flaggedSport = false
+                for (orig, res) in results {
+                    rewrittenTitles[orig] = res.rewritten
+                    if res.isSport {
+                        aiSportTitles.insert(orig)
+                        flaggedSport = true
+                    }
+                }
+                // Nyflagget sport skal ud af visningen med det samme
+                if flaggedSport && filterSport { rebuild() }
             }
         }
         isRewriting = false
         saveRewritten()
+        saveAISport()
     }
 
     func displayTitle(for article: Article) -> String {
@@ -606,6 +623,17 @@ final class FeedStore: ObservableObject {
     private func saveRewritten() {
         guard let data = try? JSONEncoder().encode(rewrittenTitles) else { return }
         try? data.write(to: rewrittenFileURL, options: .atomic)
+    }
+
+    private func loadAISport() {
+        guard let data = try? Data(contentsOf: aiSportFileURL),
+              let arr = try? JSONDecoder().decode([String].self, from: data)
+        else { return }
+        aiSportTitles = Set(arr)
+    }
+    private func saveAISport() {
+        guard let data = try? JSONEncoder().encode(Array(aiSportTitles)) else { return }
+        try? data.write(to: aiSportFileURL, options: .atomic)
     }
 
     private struct Prefs: Codable {

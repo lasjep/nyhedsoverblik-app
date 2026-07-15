@@ -1,9 +1,14 @@
 import Foundation
 
 enum HeadlineRewriter {
-    /// Kalder Claude API og returnerer en dict original → omskrevet.
+    struct Result: Sendable {
+        let rewritten: String
+        let isSport: Bool
+    }
+
+    /// Kalder Claude API og returnerer en dict original → (omskrevet, sport-flag).
     /// Returnerer nil ved netværksfejl eller ugyldig nøgle.
-    static func rewrite(_ titles: [String], apiKey: String) async -> [String: String]? {
+    static func rewrite(_ titles: [String], apiKey: String) async -> [String: Result]? {
         guard !titles.isEmpty, !apiKey.isEmpty else { return nil }
 
         let list = titles.enumerated()
@@ -17,12 +22,17 @@ enum HeadlineRewriter {
         VIGTIGT: Bevar hver overskrifts originale sprog — danske overskrifter forbliver på dansk, \
         engelske på engelsk. Oversæt ALDRIG. Listen kan indeholde blandede sprog; \
         vurder sproget for hver enkelt overskrift, ikke for listen som helhed. \
+        Du markerer desuden sportsnyheder: sæt "s":true hvis overskriften handler om sport \
+        (fodbold, cykling, håndbold, tennis, motorsport, atletik, OL, kampe, resultater, \
+        transfers, trænere eller navngivne sportsudøvere som fx Pogacar eller Mbappé) — \
+        ellers "s":false. Erhvervs-/tech-nyheder OM sportsbranchen (tv-rettigheder, \
+        streamingtjenester, sponsorater) er IKKE sport. \
         Svar KUN med JSON-objektet, ingen forklaringer.
         """
 
         let userPrompt = """
         Omskriv disse overskrifter. Svar med JSON:
-        {"rewrites":[{"i":1,"r":"omskrevet overskrift"},{"i":2,"r":"..."},...]}
+        {"rewrites":[{"i":1,"r":"omskrevet overskrift","s":false},{"i":2,"r":"...","s":true},...]}
 
         Overskrifter:
         \(list)
@@ -63,12 +73,13 @@ enum HeadlineRewriter {
               let parsed = try? JSONSerialization.jsonObject(with: rewriteData) as? [String: Any],
               let rewrites = parsed["rewrites"] as? [[String: Any]] else { return nil }
 
-        var result: [String: String] = [:]
+        var result: [String: Result] = [:]
         for entry in rewrites {
             guard let idx = entry["i"] as? Int,
                   let rewritten = entry["r"] as? String,
                   idx >= 1, idx <= titles.count else { continue }
-            result[titles[idx - 1]] = rewritten
+            result[titles[idx - 1]] = Result(rewritten: rewritten,
+                                             isSport: entry["s"] as? Bool ?? false)
         }
         return result
     }
