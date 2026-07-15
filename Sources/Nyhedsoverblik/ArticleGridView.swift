@@ -146,6 +146,16 @@ struct ArticleGridView: View {
 
     private func isCursor(_ id: String) -> Bool { cursorID == id }
 
+    // Ved små fonte droppes dividerne — de "spiser" den tætte pakning
+    private var tightRows: Bool { store.listFontSize < 13 }
+
+    @ViewBuilder
+    private func rowDivider(leading: CGFloat = 43) -> some View {
+        if !tightRows {
+            Divider().padding(.leading, leading)
+        }
+    }
+
     // MARK: – Indholds-views
 
     private var scrollGrid: some View {
@@ -172,13 +182,13 @@ struct ArticleGridView: View {
                                 .environmentObject(store)
                                 .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
                                 .id(segment.id)
-                            Divider().padding(.leading, 43)
+                            rowDivider()
 
                         case .cluster(let cluster):
                             clusterRow(cluster)
                                 .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
                                 .id(segment.id)
-                            Divider().padding(.leading, 43)
+                            rowDivider()
                         }
                     }
                 }
@@ -262,7 +272,7 @@ struct ArticleGridView: View {
                     .buttonStyle(.plain)
                     .padding(.leading, 6)
                 }
-                .padding(.vertical, 9)
+                .padding(.vertical, tightRows ? 3 : 9)
                 .padding(.horizontal, 14)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -273,7 +283,7 @@ struct ArticleGridView: View {
             if expanded {
                 VStack(spacing: 0) {
                     ForEach(cluster.articles.dropFirst()) { article in
-                        Divider().padding(.leading, 43)
+                        rowDivider()
                         ArticleListRow(article: article)
                             .environmentObject(store)
                             .padding(.leading, 20)  // indrykket for at vise hierarki
@@ -293,12 +303,12 @@ struct ArticleGridView: View {
                         ArticleListRow(article: article)
                             .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
                             .id(item.id)
-                        Divider().padding(.leading, 43)
+                        rowDivider()
                     case .cluster(let cluster):
                         clusterRow(cluster)
                             .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
                             .id(item.id)
-                        Divider().padding(.leading, 43)
+                        rowDivider()
                     }
                 }
             }
@@ -317,12 +327,12 @@ struct ArticleGridView: View {
                             .padding(.vertical, 2)
                             .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
                             .id(item.id)
-                        Divider().padding(.leading, 28)
+                        rowDivider(leading: 28)
                     case .cluster(let cluster):
                         clusterRow(cluster)
                             .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
                             .id(item.id)
-                        Divider().padding(.leading, 43)
+                        rowDivider()
                     }
                 }
             }
@@ -350,7 +360,7 @@ struct ArticleGridView: View {
                         ForEach(group.articles) { article in
                             ArticleListRow(article: article)
                                 .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
-                            Divider().padding(.leading, 43)
+                            rowDivider()
                         }
                     } header: {
                         themeHeader(group.theme,
@@ -376,7 +386,7 @@ struct ArticleGridView: View {
             Spacer()
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .padding(.vertical, tightRows ? 4 : 8)
         .background(.bar)
     }
 
@@ -418,6 +428,7 @@ struct ArticleGridView: View {
             Divider()
             thumbnailButton
             aiButton
+            fontButton
             Divider()
             gridSizeButtons
         }
@@ -568,6 +579,22 @@ struct ArticleGridView: View {
         }
         .buttonStyle(.borderless)
         .help(store.apiKey.isEmpty ? "AI-omskrivning (kræver API-nøgle)" : "AI-overskrifter til/fra")
+    }
+
+    // Skift mellem avis- (serif) og moderne (sans) skrifttype
+    private var fontButton: some View {
+        Button {
+            store.serifHeadlines.toggle()
+        } label: {
+            Text(store.serifHeadlines ? "A" : "A")
+                .font(.system(size: 14, weight: .semibold,
+                              design: store.serifHeadlines ? .serif : .default))
+                .frame(width: 28, height: 22)
+                .background(Color.clear, in: RoundedRectangle(cornerRadius: 5))
+        }
+        .buttonStyle(.borderless)
+        .help(store.serifHeadlines ? "Skrifttype: Avis (serif) — klik for Moderne"
+                                   : "Skrifttype: Moderne (sans) — klik for Avis")
     }
 
     private var gridSizeButtons: some View {

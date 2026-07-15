@@ -13,10 +13,11 @@ struct ArticleListRow: View {
 
     private var fontSize: Double { store.listFontSize }
 
-    // Luften skalerer med skriftstørrelsen — ved små fonte pakkes rækkerne tæt
-    // (11pt → ~2pt luft, 14pt → ~6pt, 20pt → ~14pt)
-    private var vPad: Double { max(2, (fontSize - 11) * 1.3 + 2) }
-    private var barHeight: Double { fontSize * 2.2 }
+    // Luften skalerer med skriftstørrelsen — ved små fonte pakkes rækkerne helt tæt
+    // (11pt → 1pt luft, 14pt → 4pt, 20pt → 10pt)
+    private var vPad: Double { max(1, (fontSize - 11) + 1) }
+    // Baren må ALDRIG være højere end én tekstlinje — ellers låser den rækkehøjden
+    private var barHeight: Double { fontSize * 1.3 }
     // Under 13pt: kilde og tid på ÉN linje så rækkehøjden styres af overskriften
     private var compactMeta: Bool { fontSize < 13 }
 

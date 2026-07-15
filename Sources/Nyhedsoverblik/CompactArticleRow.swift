@@ -53,7 +53,7 @@ struct CompactArticleRow: View {
                     }
                 }
             }
-            .padding(.vertical, max(1, (store.listFontSize - 9) * 0.6))  // skalerer med fontstørrelse
+            .padding(.vertical, max(0.5, (store.listFontSize - 10) * 0.5))  // skalerer med fontstørrelse
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
