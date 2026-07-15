@@ -23,7 +23,8 @@ struct CompactArticleRow: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(displayTitle)
-                        .font(.system(size: store.listFontSize, weight: article.seen ? .regular : .medium, design: .serif))
+                        .font(.system(size: store.listFontSize, weight: article.seen ? .regular : .medium,
+                                      design: store.headlineFontDesign))
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
                         .foregroundStyle(article.seen ? Color.secondary : Color.primary)
@@ -52,7 +53,7 @@ struct CompactArticleRow: View {
                     }
                 }
             }
-            .padding(.vertical, 3)
+            .padding(.vertical, max(1, (store.listFontSize - 9) * 0.6))  // skalerer med fontstørrelse
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

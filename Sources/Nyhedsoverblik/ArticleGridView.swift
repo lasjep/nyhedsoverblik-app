@@ -219,7 +219,7 @@ struct ArticleGridView: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(store.displayTitle(for: cluster.articles[0]))
-                            .font(.system(size: 14, weight: .semibold, design: .serif))
+                            .font(.system(size: 14, weight: .semibold, design: store.headlineFontDesign))
                             .lineLimit(2)
                             .foregroundStyle(.primary)
 
@@ -441,6 +441,9 @@ struct ArticleGridView: View {
                 }
                 Toggle(isOn: $store.aiRewrite) {
                     Label("AI-overskrifter", systemImage: "sparkles")
+                }
+                Toggle(isOn: $store.serifHeadlines) {
+                    Label("Avis-skrifttype (serif)", systemImage: "textformat")
                 }
                 Section("Størrelse") {
                     Button {

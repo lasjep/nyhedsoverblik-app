@@ -384,7 +384,7 @@ struct FilmstripCard: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(store.displayTitle(for: article))
-                    .font(.system(size: 12, weight: .semibold, design: .serif))
+                    .font(.system(size: 12, weight: .semibold, design: store.headlineFontDesign))
                     .lineLimit(3)
                     .multilineTextAlignment(.leading)
                     .foregroundStyle(isSeen && !isActive ? .secondary : .primary)

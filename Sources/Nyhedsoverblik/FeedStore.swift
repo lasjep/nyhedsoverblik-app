@@ -89,6 +89,9 @@ final class FeedStore: ObservableObject {
     @Published var gridMinWidth: Double = 190
     @Published var listFontSize: Double = 14
     @Published var appTheme: AppTheme = .system
+    @Published var serifHeadlines = true   // New York (serif) ↔ SF Pro (sans)
+
+    var headlineFontDesign: Font.Design { serifHeadlines ? .serif : .default }
 
     // Browser
     @Published var selectedArticle: Article? = nil
@@ -207,6 +210,7 @@ final class FeedStore: ObservableObject {
             $aiRewrite.dropFirst().map { _ in () }.eraseToAnyPublisher(),
             $gridMinWidth.dropFirst().map { _ in () }.eraseToAnyPublisher(),
             $listFontSize.dropFirst().map { _ in () }.eraseToAnyPublisher(),
+            $serifHeadlines.dropFirst().map { _ in () }.eraseToAnyPublisher(),
             $viewMode.dropFirst().map { _ in () }.eraseToAnyPublisher(),
             $appTheme.dropFirst().map { _ in () }.eraseToAnyPublisher(),
             $refreshIntervalMinutes.dropFirst().map { _ in () }.eraseToAnyPublisher(),
@@ -651,6 +655,7 @@ final class FeedStore: ObservableObject {
         var aiRewrite: Bool?
         var hideSeen: Bool?
         var listFontSize: Double?
+        var serifHeadlines: Bool?
     }
 
     private var prefsURL: URL {
@@ -679,6 +684,7 @@ final class FeedStore: ObservableObject {
         aiRewrite = p.aiRewrite ?? false
         hideSeen = p.hideSeen ?? false
         listFontSize = p.listFontSize ?? 14
+        serifHeadlines = p.serifHeadlines ?? true
 
         if let keychainKey {
             apiKey = keychainKey
@@ -705,7 +711,8 @@ final class FeedStore: ObservableObject {
                       appTheme: appTheme.rawValue,
                       aiRewrite: aiRewrite,
                       hideSeen: hideSeen,
-                      listFontSize: listFontSize)
+                      listFontSize: listFontSize,
+                      serifHeadlines: serifHeadlines)
         guard let data = try? JSONEncoder().encode(p) else { return }
         try? data.write(to: prefsURL, options: .atomic)
     }

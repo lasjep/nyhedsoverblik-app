@@ -174,6 +174,20 @@ struct SettingsView: View {
                     settingsToggle("Vis thumbnails som standard", icon: "photo", binding: $store.showThumbnails)
                     Divider().padding(.leading, 40)
                     HStack {
+                        Image(systemName: "textformat").frame(width: 24).foregroundStyle(.secondary)
+                        Text("Overskrift-skrifttype")
+                        Spacer()
+                        Picker("", selection: $store.serifHeadlines) {
+                            Text("Avis (serif)").tag(true)
+                            Text("Moderne (sans)").tag(false)
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 220)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    Divider().padding(.leading, 40)
+                    HStack {
                         Image(systemName: "square.grid.2x2").frame(width: 24).foregroundStyle(.secondary)
                         Text("Standard gitterstørrelse")
                         Spacer()

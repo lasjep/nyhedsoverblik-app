@@ -81,7 +81,7 @@ struct ArticleCard: View {
         VStack(alignment: .leading, spacing: 5) {
             let displayed = store.displayTitle(for: article)
             Text(displayed)
-                .font(.system(size: 13, weight: .semibold, design: .serif))
+                .font(.system(size: 13, weight: .semibold, design: store.headlineFontDesign))
                 .lineLimit(hasImage ? 3 : 5)
                 .multilineTextAlignment(.leading)
                 .foregroundStyle(article.seen ? .secondary : .primary)
