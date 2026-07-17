@@ -65,6 +65,8 @@ enum HTMLScraper {
             #"href="(/[a-zæøå-]+/(?:[a-zæøå0-9]+-){3,}[a-zæøå0-9]+/?)""#,
             // /artNNNNN/ (Politiken efter Escenic-exit)
             #"href="((?:https?://[^"]*)?/(?:[^"]*/)?art\d+/[^"]*?)""#,
+            // /slug/1234567 — numerisk ID til sidst (Ekstra Bladet)
+            #"href="((?:https?://[^"]*)?/[^"]+/\d{7,}/?)""#,
         ]
 
         var seen = Set<String>()
@@ -83,15 +85,29 @@ enum HTMLScraper {
                 guard !full.contains("/tag/"), !full.contains("/kategori/"),
                       !full.contains("/search"), !full.contains("/forfatter"),
                       !full.contains("/om/"), !full.contains("/velkommen/"),
-                      !full.contains("/om_"),     // Politikens servicesider (/om_politiken/)
-                      !full.contains("/reel/"),   // TV2's lodrette video-shorts — ikke artikler
+                      !full.contains("/om_"),       // Politikens servicesider (/om_politiken/)
+                      !full.contains("/services/"), // EB's tip-/kundeservicesider
+                      !full.contains("/reel/"),     // TV2's lodrette video-shorts — ikke artikler
                       !seen.contains(full) else { continue }
+                // Absolutte links skal blive på kildens eget domæne — forsider
+                // krydslinker til søstermedier (Politiken ↔ EB i JP/Politikens Hus),
+                // og de artikler ville ellers få forkert kilde-etiket.
+                // Sammenlign registrerbart domæne (tv2.dk ≠ nyheder.tv2.dk er OK).
+                if full.hasPrefix("http"),
+                   let linkHost = URL(string: full)?.host,
+                   let sourceHost = URL(string: sourceURL)?.host,
+                   rootDomain(linkHost) != rootDomain(sourceHost) { continue }
                 seen.insert(full)
                 if let url = URL(string: full) { urls.append(url) }
             }
             if urls.count >= 80 { break }
         }
         return urls
+    }
+
+    /// "nyheder.tv2.dk" → "tv2.dk" — registrerbart domæne (sidste to labels)
+    private static func rootDomain(_ host: String) -> String {
+        host.components(separatedBy: ".").suffix(2).joined(separator: ".")
     }
 
     // MARK: – Metadata-hentning per artikel
