@@ -63,6 +63,8 @@ enum HTMLScraper {
             // slug'en så nav-/sektionslinks ikke fanges; sidste udvej, prøves
             // kun hvis ID-mønstrene ovenfor ikke gav nok
             #"href="(/[a-zæøå-]+/(?:[a-zæøå0-9]+-){3,}[a-zæøå0-9]+/?)""#,
+            // /artNNNNN/ (Politiken efter Escenic-exit)
+            #"href="((?:https?://[^"]*)?/(?:[^"]*/)?art\d+/[^"]*?)""#,
         ]
 
         var seen = Set<String>()
@@ -81,6 +83,7 @@ enum HTMLScraper {
                 guard !full.contains("/tag/"), !full.contains("/kategori/"),
                       !full.contains("/search"), !full.contains("/forfatter"),
                       !full.contains("/om/"), !full.contains("/velkommen/"),
+                      !full.contains("/om_"),     // Politikens servicesider (/om_politiken/)
                       !full.contains("/reel/"),   // TV2's lodrette video-shorts — ikke artikler
                       !seen.contains(full) else { continue }
                 seen.insert(full)
@@ -105,14 +108,24 @@ enum HTMLScraper {
         else { return nil }
 
         // Prioritér: og:title > <title>
+        let og = html.firstMatch(pattern: #"og:title[^>]*content="([^"]{5,200})""#, group: 1)
+            ?? html.firstMatch(pattern: #"content="([^"]{5,200})"[^>]*og:title"#, group: 1)
+        let titleTag = html.firstMatch(pattern: #"<title>([^<]{5,300})</title>"#, group: 1)
+
         let title: String
-        if let og = html.firstMatch(pattern: #"og:title[^>]*content="([^"]{5,200})""#, group: 1) {
-            title = og
-        } else if let og2 = html.firstMatch(pattern: #"content="([^"]{5,200})"[^>]*og:title"#, group: 1) {
-            title = og2
-        } else if let t = html.firstMatch(pattern: #"<title>([^<]{5,200})</title>"#, group: 1) {
-            title = t
-        } else { return nil }
+        switch (og, titleTag) {
+        case let (o?, t?):
+            // Nogle CMS'er (Politiken) afkorter og:title til 60 tegn midt i et ord.
+            // Er <title> længere og deler prefix med og:title, er den den fulde titel.
+            if t.count > o.count, t.commonPrefix(with: o).count >= o.count - 2 {
+                title = t
+            } else {
+                title = o
+            }
+        case let (o?, nil): title = o
+        case let (nil, t?): title = t
+        default: return nil
+        }
 
         var cleanTitle = title
             .components(separatedBy: .newlines).map { $0.trimmingCharacters(in: .whitespaces) }
