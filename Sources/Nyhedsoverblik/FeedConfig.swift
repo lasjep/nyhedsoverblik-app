@@ -33,7 +33,6 @@ let defaultFeeds: [FeedSource] = [
     FeedSource(id: "verge",         name: "The Verge",      url: "https://www.theverge.com/rss/index.xml",                      colorHex: "#e5343a", filterCommercial: true),
     FeedSource(id: "ars",           name: "Ars Technica",   url: "https://feeds.arstechnica.com/arstechnica/index",             colorHex: "#f67a1a", filterCommercial: true),
     FeedSource(id: "techcrunch",    name: "TechCrunch",     url: "https://techcrunch.com/feed/",                                colorHex: "#0a7d5c", filterCommercial: true),
-    FeedSource(id: "mediebranchen", name: "Mediebranchen",  url: "https://mediebranchen.dk/feed/",                              colorHex: "#5b4ea0"),
     FeedSource(id: "mediawatch",    name: "MediaWatch",     url: "https://mediawatch.dk/latest",                                colorHex: "#005b8e", feedType: .scrape),
     FeedSource(id: "tvtechnology",  name: "TV Technology",  url: "https://www.tvtechnology.com/feeds.xml",                      colorHex: "#7d3c98", filterCommercial: true),
     FeedSource(id: "nyt",           name: "NY Times",
