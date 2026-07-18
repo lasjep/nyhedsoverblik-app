@@ -194,6 +194,19 @@ let wc = FeedStore.titleWords("Ny MacBook Pro med M5-chip")
 check(FeedStore.titleSimilarity(wa, wb) >= 0.42, "ens overskrifter over tærskel")
 check(FeedStore.titleSimilarity(wa, wc) < 0.42, "forskellige under tærskel")
 
+// MARK: – Artikel-ID normalisering (RSS vs. forside-scrape)
+
+print("\n— Artikel-ID normalisering")
+check(normalizedArticleID("https://www.berlingske.dk/indland/slug?referrer=RSS")
+      == normalizedArticleID("https://www.berlingske.dk/indland/slug"),
+      "?referrer=RSS fjernes (Berlingske)")
+check(normalizedArticleID("https://x.dk/nyheder/slug/")
+      == normalizedArticleID("https://x.dk/nyheder/slug"),
+      "trailing slash normaliseres")
+check(normalizedArticleID("https://x.dk/a?id=7&utm_source=fb")
+      == normalizedArticleID("https://x.dk/a?id=7"),
+      "utm_* fjernes men rigtige params beholdes")
+
 // MARK: – Tema-klassificering
 
 print("\n— Tema-klassificering")

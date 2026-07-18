@@ -17,7 +17,8 @@ let defaultFeeds: [FeedSource] = [
     // EB's feed svinger mellem 2-10 artikler (~10 timers vindue) — forsiden scrapes med
     FeedSource(id: "eb",            name: "Ekstra Bladet",  url: "https://ekstrabladet.dk/rssfeed/nyheder/",                    colorHex: "#f5a623",
                scrapePageURL: "https://ekstrabladet.dk"),
-    FeedSource(id: "berlingske",    name: "Berlingske",     url: "https://www.berlingske.dk/content/rss",                       colorHex: "#1f6f6f",
+    // /content/rss døde juli 2026 (svarer nu med teksten "/next-api/feeds/alle")
+    FeedSource(id: "berlingske",    name: "Berlingske",     url: "https://www.berlingske.dk/next-api/feeds/alle",               colorHex: "#1f6f6f",
                scrapePageURL: "https://www.berlingske.dk"),
     FeedSource(id: "politiken",     name: "Politiken",      url: "https://politiken.dk/rss/senestenyt.rss",                     colorHex: "#c0392b",
                scrapePageURL: "https://politiken.dk"),

@@ -94,13 +94,18 @@ func normalizedArticleID(_ link: String) -> String {
     guard var comps = URLComponents(string: link) else { return link }
     comps.fragment = nil
     let banned: Set<String> = ["fbclid", "gclid", "ref", "cmpid", "ns_campaign", "ns_mchannel", "icid",
-                               "fp-exp", "fp-alg"]   // fp-*: JP's forside-eksperiment-params
+                               "fp-exp", "fp-alg",   // fp-*: JP's forside-eksperiment-params
+                               "referrer"]           // Berlingskes RSS hæfter ?referrer=RSS på alle links
     if let items = comps.queryItems {
         let kept = items.filter {
             let n = $0.name.lowercased()
             return !n.hasPrefix("utm_") && !banned.contains(n)
         }
         comps.queryItems = kept.isEmpty ? nil : kept
+    }
+    // Trailing slash: /slug og /slug/ er samme artikel (RSS vs. forside-scrape)
+    if comps.path.count > 1, comps.path.hasSuffix("/") {
+        comps.path = String(comps.path.dropLast())
     }
     return comps.string ?? link
 }

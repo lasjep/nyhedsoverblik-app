@@ -32,6 +32,15 @@ enum NewsTheme: String, CaseIterable, Identifiable {
     }
 }
 
+/// Ét temas indhold: den flade artikelliste (til optælling) og den
+/// clustrede udgave (til visning — samme historie på tværs af kilder samles)
+struct ThemedGroup: Identifiable {
+    let theme: NewsTheme
+    let articles: [Article]
+    let items: [FeedItem]
+    var id: NewsTheme { theme }
+}
+
 // Kilder hvor hele kilden entydigt hører til ét tema
 private let sourceThemes: [String: NewsTheme] = [
     "engadget":     .tech,

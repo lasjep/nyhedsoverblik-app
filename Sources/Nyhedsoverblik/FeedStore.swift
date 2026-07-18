@@ -68,6 +68,7 @@ final class FeedStore: ObservableObject {
     @Published private(set) var articlesBySource: [String: [Article]] = [:]  // filtreret + seen-markeret
     @Published private(set) var visibleArticles: [Article] = []              // flad liste til liste/kompakt/panel
     @Published private(set) var feedItems: [FeedItem] = []                   // med clusters, til grid
+    @Published private(set) var themedItems: [ThemedGroup] = []              // grupperet + clustret, til temavisning
     @Published private(set) var sourceErrors: [String: String] = [:]         // kilde-id → fejlbesked
 
     @Published var isLoading = false
@@ -283,6 +284,17 @@ final class FeedStore: ObservableObject {
 
         // 3) Clusters (kun relevant for grid, men billigt nok at holde ajour)
         feedItems = Self.clusterArticles(visible)
+
+        // 4) Temaer: gruppér + cluster inden for hvert tema — cachet her så
+        //    O(n²)-clusteringen ikke køres ved hver render af temavisningen
+        let byTheme = Dictionary(grouping: visible) {
+            classifyTheme(url: $0.id, sourceID: $0.sourceID, tags: $0.tags)
+        }
+        themedItems = NewsTheme.allCases.compactMap { theme in
+            guard let arts = byTheme[theme], !arts.isEmpty else { return nil }
+            return ThemedGroup(theme: theme, articles: arts,
+                               items: Self.clusterArticles(arts))
+        }
     }
 
     /// Opdater kun seen-flag uden at genberegne clustering — bruges når en artikel

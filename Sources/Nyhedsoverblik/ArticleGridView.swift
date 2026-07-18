@@ -106,7 +106,7 @@ struct ArticleGridView: View {
     private var navigableIDs: [String] {
         switch store.viewMode {
         case .grid:   return smartSegments.map(\.id)
-        case .themes: return themedGroups.flatMap { $0.articles.map(\.id) }
+        case .themes: return store.themedItems.flatMap { $0.items.map(\.id) }
         default:      return store.feedItems.map(\.id)
         }
     }
@@ -134,7 +134,14 @@ struct ArticleGridView: View {
             case .cluster(let c):       store.openArticle(c.articles[0])
             }
         case .themes:
-            if let a = store.visibleArticles.first(where: { $0.id == id }) { store.openArticle(a) }
+            for group in store.themedItems {
+                guard let item = group.items.first(where: { $0.id == id }) else { continue }
+                switch item {
+                case .single(let a):  store.openArticle(a)
+                case .cluster(let c): store.openArticle(c.articles[0])
+                }
+                return
+            }
         default:
             guard let item = store.feedItems.first(where: { $0.id == id }) else { return }
             switch item {
@@ -328,24 +335,20 @@ struct ArticleGridView: View {
 
     // MARK: – Temaer
 
-    private var themedGroups: [(theme: NewsTheme, articles: [Article])] {
-        let grouped = Dictionary(grouping: store.visibleArticles) {
-            classifyTheme(url: $0.id, sourceID: $0.sourceID, tags: $0.tags)
-        }
-        return NewsTheme.allCases.compactMap { theme in
-            guard let arts = grouped[theme], !arts.isEmpty else { return nil }
-            return (theme, arts)
-        }
-    }
-
     private var themesList: some View {
         ScrollView {
             LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
-                ForEach(themedGroups, id: \.theme) { group in
+                ForEach(store.themedItems) { group in
                     Section {
-                        ForEach(group.articles) { article in
-                            ArticleListRow(article: article)
-                                .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                        ForEach(group.items) { item in
+                            switch item {
+                            case .single(let article):
+                                ArticleListRow(article: article)
+                                    .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                            case .cluster(let cluster):
+                                clusterRow(cluster)
+                                    .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                            }
                         }
                     } header: {
                         themeHeader(group.theme,
