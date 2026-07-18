@@ -226,27 +226,14 @@ struct ArticleGridView: View {
                         }
                     }
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(store.displayTitle(for: cluster.articles[0]))
-                            .font(.system(size: store.listFontSize, weight: .semibold, design: store.headlineFontDesign))
-                            .lineLimit(2)
-                            .foregroundStyle(.primary)
-
-                        HStack(spacing: 4) {
-                            let a0 = cluster.articles[0]
-                            let src = store.sources.first(where: { $0.id == a0.sourceID })
-                            Circle().fill(src?.color ?? .secondary).frame(width: 5, height: 5)
-                            Text(a0.sourceName)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                            if let d = a0.publishedAt {
-                                Text("· \(relativeTime(d))")
-                                    .font(.caption2.monospacedDigit())
-                                    .foregroundStyle(.tertiary)
-                            }
-                        }
-                    }
-                    .layoutPriority(1)
+                    // Ingen kilde-linje før udfoldning — kilderne fremgår af
+                    // "N kilder"-badgen og af under-rækkerne når der foldes ud,
+                    // og en ekstra linje ville gøre rækken højere end de andre
+                    Text(store.displayTitle(for: cluster.articles[0]))
+                        .font(.system(size: store.listFontSize, weight: .semibold, design: store.headlineFontDesign))
+                        .lineLimit(2)
+                        .foregroundStyle(.primary)
+                        .layoutPriority(1)
 
                     Spacer(minLength: 8)
 
@@ -278,10 +265,11 @@ struct ArticleGridView: View {
             }
             .buttonStyle(.plain)
 
-            // Udvidede under-artikler
+            // Udvidede under-artikler — ALLE versioner inkl. den første,
+            // nu hvor den kollapsede række ikke længere viser nogen kilde
             if expanded {
                 VStack(spacing: 0) {
-                    ForEach(cluster.articles.dropFirst()) { article in
+                    ForEach(cluster.articles) { article in
                         ArticleListRow(article: article)
                             .environmentObject(store)
                             .padding(.leading, 20)  // indrykket for at vise hierarki
