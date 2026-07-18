@@ -210,11 +210,12 @@ struct ArticleGridView: View {
                     } ?? Color.secondary
                     RoundedRectangle(cornerRadius: 2)
                         .fill(barColor)
-                        .frame(width: 3, height: 32)
+                        .frame(width: 3, height: store.listFontSize * 1.3)
                         .padding(.trailing, 12)
 
-                    // Thumbnail hvis tilgængeligt
-                    if let thumb = cluster.thumbnailURL {
+                    // Thumbnail hvis tilgængeligt — men ikke i temavisningen,
+                    // hvor cluster-rækker skal ligne de kompakte artikelrækker
+                    if store.viewMode != .themes, let thumb = cluster.thumbnailURL {
                         AsyncImage(url: thumb) { phase in
                             if case .success(let img) = phase {
                                 img.resizable().aspectRatio(contentMode: .fill)
@@ -227,7 +228,7 @@ struct ArticleGridView: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(store.displayTitle(for: cluster.articles[0]))
-                            .font(.system(size: 14, weight: .semibold, design: store.headlineFontDesign))
+                            .font(.system(size: store.listFontSize, weight: .semibold, design: store.headlineFontDesign))
                             .lineLimit(2)
                             .foregroundStyle(.primary)
 

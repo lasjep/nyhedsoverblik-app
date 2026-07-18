@@ -194,6 +194,14 @@ let wc = FeedStore.titleWords("Ny MacBook Pro med M5-chip")
 check(FeedStore.titleSimilarity(wa, wb) >= 0.42, "ens overskrifter over tærskel")
 check(FeedStore.titleSimilarity(wa, wc) < 0.42, "forskellige under tærskel")
 
+// Bøjningsformer må ikke blokere clustering (dansk flertal/bestemt form)
+let wd = FeedStore.titleWords("Indisk raket rammer mål i Pakistan")
+let we = FeedStore.titleWords("Indiske raketter rammer Pakistan")
+check(FeedStore.titleSimilarity(wd, we) >= 0.42, "bøjningsformer clustres (raket/raketter)")
+let wf = FeedStore.titleWords("Politiet anholder mand i Odense")
+let wg = FeedStore.titleWords("Ny politik for boligskat vedtaget")
+check(FeedStore.titleSimilarity(wf, wg) < 0.42, "politiet/politik giver ikke falsk cluster")
+
 // MARK: – Artikel-ID normalisering (RSS vs. forside-scrape)
 
 print("\n— Artikel-ID normalisering")

@@ -338,9 +338,24 @@ final class FeedStore: ObservableObject {
 
     nonisolated static func titleSimilarity(_ a: Set<String>, _ b: Set<String>) -> Double {
         guard !a.isEmpty && !b.isEmpty else { return 0 }
-        let intersection = Double(a.intersection(b).count)
-        let union = Double(a.union(b).count)
-        return intersection / union
+        var matched = Double(a.intersection(b).count)
+        // Bøjningsformer: "raket"/"raketter", "indisk"/"indiske" skal tælle som
+        // match — hash-intersection først (billigt), prefix-tjek kun på resterne
+        var restB = b.subtracting(a)
+        for wa in a.subtracting(b) {
+            if let hit = restB.first(where: { sharesStem(wa, $0) }) {
+                restB.remove(hit)
+                matched += 1
+            }
+        }
+        let union = Double(a.count + b.count) - matched
+        return matched / union
+    }
+
+    /// To ord deler stamme hvis det korte er prefix af det lange (min. 4 tegn)
+    private nonisolated static func sharesStem(_ a: String, _ b: String) -> Bool {
+        guard a.count >= 4, b.count >= 4 else { return false }
+        return a.count < b.count ? b.hasPrefix(a) : a.hasPrefix(b)
     }
 
     nonisolated static func clusterArticles(_ articles: [Article]) -> [FeedItem] {
