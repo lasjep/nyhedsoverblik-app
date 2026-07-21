@@ -1,11 +1,10 @@
 import SwiftUI
 
-// Segment til blandet grid/liste-layout
+// Segment til grid-layout: kort-grupper adskilt af fuldbredde cluster-rækker
 private struct FeedSegment: Identifiable {
     enum Kind {
-        case imageGroup([Article])   // artikler med thumbnail → vises som grid
-        case textRow(Article)        // artikler uden thumbnail → vises som listelinjer
-        case cluster(StoryCluster)   // flere artikler om samme nyhed → grupperet
+        case imageGroup([Article])   // alle enkelt-artikler → kort (med/uden billede)
+        case cluster(StoryCluster)   // flere artikler om samme nyhed → grupperet række
     }
     let id: String
     let kind: Kind
@@ -44,16 +43,10 @@ struct ArticleGridView: View {
         for item in store.feedItems {
             switch item {
             case .single(let article):
-                if article.thumbnailURL != nil {
-                    imageBuffer.append(article)
-                    // Skyl gruppen hvis den er stor nok til at fylde mange rækker
-                    if imageBuffer.count >= 12 { flushImages() }
-                } else {
-                    // Tekst-artikel: læg billederne ud hvis der er nok til mindst én fuld række,
-                    // ellers hold dem og lad dem akkumulere (fylder rækken bedre)
-                    if imageBuffer.count >= 3 { flushImages() }
-                    segments.append(FeedSegment(id: article.id, kind: .textRow(article)))
-                }
+                // ALLE enkelt-artikler bliver kort — tekst-artikler renderer
+                // som hero-tekstkort, så grid-rytmen aldrig brydes
+                imageBuffer.append(article)
+                if imageBuffer.count >= 12 { flushImages() }
             case .cluster(let cluster):
                 // Skyl billedebufferen før en cluster
                 flushImages()
@@ -130,7 +123,6 @@ struct ArticleGridView: View {
             guard let seg = smartSegments.first(where: { $0.id == id }) else { return }
             switch seg.kind {
             case .imageGroup(let arts): if let first = arts.first { store.openArticle(first) }
-            case .textRow(let a):       store.openArticle(a)
             case .cluster(let c):       store.openArticle(c.articles[0])
             }
         case .themes:
@@ -176,12 +168,6 @@ struct ArticleGridView: View {
                             .padding(.vertical, 6)
                             .background(isCursor(segment.id) ? Color.accentColor.opacity(0.12) : Color.clear)
                             .id(segment.id)
-
-                        case .textRow(let article):
-                            ArticleListRow(article: article)
-                                .environmentObject(store)
-                                .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
-                                .id(segment.id)
 
                         case .cluster(let cluster):
                             clusterRow(cluster)
