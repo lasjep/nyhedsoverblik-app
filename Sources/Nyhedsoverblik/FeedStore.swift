@@ -73,6 +73,9 @@ final class FeedStore: ObservableObject {
 
     @Published var isLoading = false
     @Published var lastUpdated: Date?
+    // Splash/refresh-fremdrift: hvilke kilder er hentet i igangværende refresh
+    @Published private(set) var fetchedSourceIDs: Set<String> = []
+    @Published private(set) var refreshTotal: Int = 0
     @Published var selectedSourceID: String = "__all__"   // "__all__" = alle
 
     // Filtre
@@ -480,6 +483,8 @@ final class FeedStore: ObservableObject {
 
     func refresh() async {
         isLoading = true
+        fetchedSourceIDs = []
+        refreshTotal = activeSources.count
         let cacheSnapshot = httpCache
         await withTaskGroup(of: (String, FetchOutcome).self) { group in
             for source in activeSources {
@@ -492,6 +497,7 @@ final class FeedStore: ObservableObject {
             }
             for await (id, outcome) in group {
                 apply(outcome: outcome, for: id)
+                fetchedSourceIDs.insert(id)
             }
         }
         isLoading = false
@@ -520,7 +526,9 @@ final class FeedStore: ObservableObject {
         if hideSeen { rebuild() } else { applySeenFlagsInPlace() }
     }
 
-    func markAllSeen() {
+    /// closingBrowser: false ved auto-markering (minimér/skjul) — ellers ville
+    /// artiklen man er i gang med at læse blive lukket bag om ryggen på én
+    func markAllSeen(closingBrowser: Bool = true) {
         let ids = Set(visibleArticles.map(\.id))
         for id in ids where !seenIDs.contains(id) {
             seenIDs.insert(id)
@@ -529,7 +537,7 @@ final class FeedStore: ObservableObject {
         saveSeen()
         if hideSeen { rebuild() } else { applySeenFlagsInPlace() }
         // Luk browseren hvis den aktive artikel netop er markeret
-        if let current = selectedArticle, ids.contains(current.id) {
+        if closingBrowser, let current = selectedArticle, ids.contains(current.id) {
             closeBrowser()
         }
     }

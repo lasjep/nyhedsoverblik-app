@@ -159,8 +159,10 @@ enum HTMLScraper {
             }
         }
 
-        // Kig efter publiceringsdato
-        let pubDate = extractDate(from: html)
+        // Kig efter publiceringsdato — falder tilbage til dato i URL'en
+        // (TV2's <head> er ~180KB, så og:-metadata ligger uden for byte-range;
+        // uden dato ville artiklerne sortere som ældst og klumpe i bunden)
+        let pubDate = extractDate(from: html) ?? dateFromURL(url)
 
         // Thumbnail
         let thumbURL: URL? = html
@@ -182,6 +184,17 @@ enum HTMLScraper {
             tags: tags,
             seen: false
         )
+    }
+
+    /// Dato-slug i URL-stien (fx tv2.dk/nyheder/2026-07-14-overskrift) → kl. 12
+    /// lokal tid, så dags-niveau-sortering virker selvom klokkeslæt er ukendt
+    private static func dateFromURL(_ url: URL) -> Date? {
+        guard let m = url.path.firstMatch(pattern: #"/(\d{4}-\d{2}-\d{2})-"#, group: 1) else { return nil }
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "en_US_POSIX")
+        df.dateFormat = "yyyy-MM-dd"
+        guard let day = df.date(from: m) else { return nil }
+        return Calendar.current.date(byAdding: .hour, value: 12, to: day)
     }
 
     private static func extractDate(from html: String) -> Date? {

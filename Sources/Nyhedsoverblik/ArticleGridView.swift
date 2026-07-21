@@ -1,13 +1,11 @@
 import SwiftUI
 
-// Segment til grid-layout: kort-grupper adskilt af fuldbredde cluster-rækker
-private struct FeedSegment: Identifiable {
-    enum Kind {
-        case imageGroup([Article])   // alle enkelt-artikler → kort (med/uden billede)
-        case cluster(StoryCluster)   // flere artikler om samme nyhed → grupperet række
-    }
-    let id: String
-    let kind: Kind
+// Ét kort i grid'et — clusters repræsenteres af deres nyeste artikel
+// med kilde-antal som badge (samme nyhed vises aldrig to gange)
+private struct CardItem: Identifiable {
+    let article: Article
+    let sourceCount: Int
+    var id: String { article.id }
 }
 
 struct ArticleGridView: View {
@@ -27,34 +25,47 @@ struct ArticleGridView: View {
         [GridItem(.adaptive(minimum: store.gridMinWidth, maximum: store.gridMinWidth * 1.6), spacing: 10)]
     }
 
-    // Opdel i segmenter — clustering er allerede beregnet og cachet i FeedStore.
-    // Her grupperes kun billede-artikler i buffere så grid-rækkerne fyldes op (billig, lineær).
-    private var smartSegments: [FeedSegment] {
-        var segments: [FeedSegment] = []
-        var imageBuffer: [Article] = []   // samler billede-artikler til at fylde rækker
-
-        func flushImages() {
-            guard !imageBuffer.isEmpty else { return }
-            let id = imageBuffer.prefix(3).map(\.id).joined(separator: "|")
-            segments.append(FeedSegment(id: "img|\(id)", kind: .imageGroup(imageBuffer)))
-            imageBuffer = []
-        }
-
-        for item in store.feedItems {
-            switch item {
-            case .single(let article):
-                // ALLE enkelt-artikler bliver kort — tekst-artikler renderer
-                // som hero-tekstkort, så grid-rytmen aldrig brydes
-                imageBuffer.append(article)
-                if imageBuffer.count >= 12 { flushImages() }
-            case .cluster(let cluster):
-                // Skyl billedebufferen før en cluster
-                flushImages()
-                segments.append(FeedSegment(id: cluster.id, kind: .cluster(cluster)))
+    // To-lags grid: billed-kort i fuld størrelse, tekst-kort samlet i bånd af
+    // halv højde — kronologien ofres en anelse inden for hvert bånd, til
+    // gengæld brydes rytmen aldrig af enlige tekst-kort
+    private enum GridBand: Identifiable {
+        case full([CardItem])   // kort med billede
+        case half([CardItem])   // kort uden billede, halv højde
+        var id: String {
+            switch self {
+            case .full(let items): return "f|" + (items.first?.id ?? "")
+            case .half(let items): return "h|" + (items.first?.id ?? "")
             }
         }
-        flushImages()
-        return segments
+        var items: [CardItem] {
+            switch self {
+            case .full(let i), .half(let i): return i
+            }
+        }
+    }
+
+    private var gridBands: [GridBand] {
+        var bands: [GridBand] = []
+        var imgBuf: [CardItem] = []
+        var txtBuf: [CardItem] = []
+
+        for item in store.feedItems {
+            let card: CardItem
+            switch item {
+            case .single(let a):  card = CardItem(article: a, sourceCount: 1)
+            case .cluster(let c): card = CardItem(article: c.articles[0], sourceCount: c.articles.count)
+            }
+            if store.showThumbnails && card.article.thumbnailURL != nil {
+                imgBuf.append(card)
+                if imgBuf.count >= 12 { bands.append(.full(imgBuf)); imgBuf = [] }
+            } else {
+                txtBuf.append(card)
+                if txtBuf.count >= 24 { bands.append(.half(txtBuf)); txtBuf = [] }
+            }
+        }
+        if !imgBuf.isEmpty { bands.append(.full(imgBuf)) }
+        if !txtBuf.isEmpty { bands.append(.half(txtBuf)) }
+        return bands
     }
 
     var body: some View {
@@ -63,7 +74,13 @@ struct ArticleGridView: View {
         ScrollViewReader { proxy in
             Group {
                 if store.isLoading && store.visibleArticles.isEmpty {
-                    loadingView
+                    // Første hentning efter appstart → flot splash med fremdrift;
+                    // senere tomme refreshes → diskret spinner
+                    if store.lastUpdated == nil {
+                        SplashView()
+                    } else {
+                        loadingView
+                    }
                 } else if store.visibleArticles.isEmpty {
                     emptyView
                 } else if store.viewMode == .list {
@@ -98,7 +115,7 @@ struct ArticleGridView: View {
 
     private var navigableIDs: [String] {
         switch store.viewMode {
-        case .grid:   return smartSegments.map(\.id)
+        case .grid:   return gridBands.map(\.id)
         case .themes: return store.themedItems.flatMap { $0.items.map(\.id) }
         default:      return store.feedItems.map(\.id)
         }
@@ -120,10 +137,9 @@ struct ArticleGridView: View {
         guard let id = cursorID else { return }
         switch store.viewMode {
         case .grid:
-            guard let seg = smartSegments.first(where: { $0.id == id }) else { return }
-            switch seg.kind {
-            case .imageGroup(let arts): if let first = arts.first { store.openArticle(first) }
-            case .cluster(let c):       store.openArticle(c.articles[0])
+            if let band = gridBands.first(where: { $0.id == id }),
+               let first = band.items.first {
+                store.openArticle(first.article)
             }
         case .themes:
             for group in store.themedItems {
@@ -156,24 +172,20 @@ struct ArticleGridView: View {
             let availW = geo.size.width - 24   // minus horisontal padding
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    ForEach(smartSegments) { segment in
-                        switch segment.kind {
-                        case .imageGroup(let articles):
-                            NonLazyVGrid(articles: articles,
-                                         containerWidth: availW,
-                                         minColWidth: store.gridMinWidth,
-                                         spacing: 10,
-                                         store: store)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(isCursor(segment.id) ? Color.accentColor.opacity(0.12) : Color.clear)
-                            .id(segment.id)
-
-                        case .cluster(let cluster):
-                            clusterRow(cluster)
-                                .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
-                                .id(segment.id)
-                        }
+                    ForEach(gridBands) { band in
+                        NonLazyVGrid(items: band.items,
+                                     containerWidth: availW,
+                                     minColWidth: store.gridMinWidth,
+                                     spacing: 10,
+                                     halfHeight: {
+                                         if case .half = band { return true }
+                                         return false
+                                     }(),
+                                     store: store)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(isCursor(band.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                        .id(band.id)
                     }
                 }
                 .padding(.bottom, 8)
@@ -599,16 +611,18 @@ struct ArticleGridView: View {
 // MARK: – Grid med fast beregnet højde (ingen GeometryReader = ingen overlap)
 
 private struct NonLazyVGrid: View {
-    let articles: [Article]
+    let items: [CardItem]
     let containerWidth: CGFloat   // målt én gang i parent
     let minColWidth: CGFloat
     let spacing: CGFloat
+    var halfHeight = false        // tekst-kort-bånd: halv korthøjde
     let store: FeedStore
 
     private var colCount: Int  { max(1, Int(containerWidth / minColWidth)) }
     private var colWidth: CGFloat { (containerWidth - spacing * CGFloat(colCount - 1)) / CGFloat(colCount) }
-    private var cardHeight: CGFloat { colWidth * (9.0 / 16.0) + 100 }
-    private var rowCount: Int { (articles.count + colCount - 1) / colCount }
+    private var fullHeight: CGFloat { colWidth * (9.0 / 16.0) + 100 }
+    private var cardHeight: CGFloat { halfHeight ? (fullHeight - spacing) / 2 : fullHeight }
+    private var rowCount: Int { (items.count + colCount - 1) / colCount }
     private var totalHeight: CGFloat {
         CGFloat(rowCount) * cardHeight + CGFloat(max(0, rowCount - 1)) * spacing
     }
@@ -619,8 +633,9 @@ private struct NonLazyVGrid: View {
                 HStack(spacing: spacing) {
                     ForEach(0..<colCount, id: \.self) { col in
                         let idx = row * colCount + col
-                        if idx < articles.count {
-                            ArticleCard(article: articles[idx])
+                        if idx < items.count {
+                            ArticleCard(article: items[idx].article,
+                                        sourceCount: items[idx].sourceCount)
                                 .environmentObject(store)
                                 .frame(width: colWidth, height: cardHeight)
                         } else {

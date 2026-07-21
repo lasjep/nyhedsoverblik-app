@@ -27,6 +27,27 @@ struct NyhedsoverblikApp: App {
                     default: break
                     }
                 }
+                // Pause = læst: minimér, skjul, luk vindue eller afslut app
+                // markerer alle viste overskrifter som læst, så man ikke vender
+                // tilbage til en uendelig liste
+                .onReceive(NotificationCenter.default.publisher(
+                    for: NSApplication.willTerminateNotification)) { _ in
+                    store.markAllSeen()
+                }
+                .onReceive(NotificationCenter.default.publisher(
+                    for: NSApplication.didHideNotification)) { _ in
+                    store.markAllSeen(closingBrowser: false)
+                }
+                .onReceive(NotificationCenter.default.publisher(
+                    for: NSWindow.willMiniaturizeNotification)) { note in
+                    guard (note.object as? NSWindow)?.title == "Nyhedsoverblik" else { return }
+                    store.markAllSeen(closingBrowser: false)
+                }
+                .onReceive(NotificationCenter.default.publisher(
+                    for: NSWindow.willCloseNotification)) { note in
+                    guard (note.object as? NSWindow)?.title == "Nyhedsoverblik" else { return }
+                    store.markAllSeen()
+                }
         }
         Window("Mini widget", id: "mini-widget") {
             MiniWidgetPanel()

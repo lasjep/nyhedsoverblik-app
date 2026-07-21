@@ -1,16 +1,19 @@
 import SwiftUI
 
+// Magasin-kort: billedet fylder HELE kortet, titel + meta ligger altid
+// nederst på en mørk scrim. Kort uden billede: samme tekstplacering på en
+// diskret gradient i kildens farve — ingen placeholder-ikoner, ingen huller.
 struct ArticleCard: View {
     let article: Article
+    var sourceCount: Int = 1   // >1: artiklen dækker et cluster ("N kilder"-badge)
     @EnvironmentObject var store: FeedStore
     @State private var isHovered = false
+    @State private var imageLoaded = false
 
     var sourceColor: Color {
         store.sources.first(where: { $0.id == article.sourceID })?.color ?? .gray
     }
 
-    // Fast kortstørrelse baseret på tile-bredde
-    private var imageHeight: CGFloat { store.gridMinWidth * (9.0 / 16.0) }
     private var hasThumb: Bool { store.showThumbnails && article.thumbnailURL != nil }
 
     var body: some View {
@@ -24,22 +27,44 @@ struct ArticleCard: View {
         .animation(.easeOut(duration: 0.12), value: isHovered)
     }
 
-    // Kortet fylder ALTID hele sit slot i grid'et (NonLazyVGrid bestemmer
-    // størrelsen) — billedområdet viser billede eller gradient, aldrig et hul
     private var cardContent: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        Group {
             if hasThumb {
-                thumbnailArea
-                bodySection
+                // Billed-kort: fuld-blødende billede, tekst på scrim nederst
+                ZStack(alignment: .bottomLeading) {
+                    background
+                    textBlock
+                }
             } else {
-                heroTextSection
+                // Tekst-kort (halv højde i grid'et): titel i top, meta i bund
+                ZStack {
+                    softGradient
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(store.displayTitle(for: article))
+                            .font(.system(size: 13, weight: .semibold, design: store.headlineFontDesign))
+                            .lineLimit(4)
+                            .multilineTextAlignment(.leading)
+                            .foregroundStyle(article.seen ? Color.secondary : Color.primary)
+                        Spacer(minLength: 0)
+                        metaRow
+                    }
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(article.seen
-            ? Color.platformWindowBackground
-            : Color.platformControlBackground
-        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(article.seen ? Color.platformWindowBackground : Color.platformControlBackground)
+        .overlay(alignment: .topTrailing) {
+            if sourceCount > 1 {
+                Text("\(sourceCount) kilder")
+                    .font(.caption2.bold())
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .padding(6)
+            }
+        }
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(
             RoundedRectangle(cornerRadius: 10)
@@ -51,64 +76,55 @@ struct ArticleCard: View {
         .zIndex(isHovered ? 1 : 0)
     }
 
-    // Diskret flade i kildens farve — vises mens billedet henter, hvis
-    // hentningen fejler, og som baggrund for tekst-kort
-    private var gradientPlaceholder: some View {
-        ZStack {
-            LinearGradient(colors: [sourceColor.opacity(0.28), sourceColor.opacity(0.08)],
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
-            Image(systemName: "newspaper")
-                .font(.system(size: 26))
-                .foregroundStyle(sourceColor.opacity(0.35))
-        }
-    }
-
-    private var thumbnailArea: some View {
-        AsyncImage(url: article.thumbnailURL) { phase in
-            if case .success(let img) = phase {
-                img.resizable().aspectRatio(contentMode: .fill)
-            } else {
-                gradientPlaceholder
+    // Fuld-blødende billede — stille gradient mens det henter / hvis det fejler
+    private var background: some View {
+        GeometryReader { geo in
+            AsyncImage(url: article.thumbnailURL) { phase in
+                if case .success(let img) = phase {
+                    img.resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .onAppear { imageLoaded = true }
+                } else {
+                    softGradient
+                }
             }
-        }
-        .frame(height: imageHeight)
-        .frame(maxWidth: .infinity)
-        .clipped()
-    }
-
-    // Kort uden billede: stor rubrik på gradient — fylder hele kortet,
-    // så grid-rytmen holdes og tekst-artikler får magasin-look
-    private var heroTextSection: some View {
-        ZStack(alignment: .topLeading) {
-            LinearGradient(colors: [sourceColor.opacity(0.22), sourceColor.opacity(0.05)],
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
-            VStack(alignment: .leading, spacing: 6) {
-                Text(store.displayTitle(for: article))
-                    .font(.system(size: 15, weight: .semibold, design: store.headlineFontDesign))
-                    .lineLimit(7)
-                    .multilineTextAlignment(.leading)
-                    .foregroundStyle(article.seen ? .secondary : .primary)
-                Spacer(minLength: 0)
-                metaRow
-            }
-            .padding(10)
+            .frame(width: geo.size.width, height: geo.size.height)
+            .clipped()
         }
     }
 
-    private var bodySection: some View {
-        VStack(alignment: .leading, spacing: 5) {
+    private var softGradient: some View {
+        LinearGradient(colors: [sourceColor.opacity(0.18), sourceColor.opacity(0.04)],
+                       startPoint: .topLeading, endPoint: .bottomTrailing)
+    }
+
+    // Titel + meta — ALTID nederst, samme placering på alle kort
+    private var textBlock: some View {
+        VStack(alignment: .leading, spacing: 4) {
             Text(store.displayTitle(for: article))
                 .font(.system(size: 13, weight: .semibold, design: store.headlineFontDesign))
-                .lineLimit(3)
+                .lineLimit(4)
                 .multilineTextAlignment(.leading)
-                .foregroundStyle(article.seen ? .secondary : .primary)
-
-            Spacer(minLength: 0)
+                .foregroundStyle(titleColor)
 
             metaRow
         }
-        .padding(9)
-        .frame(maxHeight: .infinity, alignment: .top)
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            // Scrim så hvid tekst kan læses ovenpå billeder — kun når et
+            // billede faktisk er indlæst
+            if imageLoaded {
+                LinearGradient(colors: [.black.opacity(0.82), .black.opacity(0.45), .clear],
+                               startPoint: .bottom, endPoint: .top)
+                    .padding(.top, -24)   // blød overgang lidt op over teksten
+            }
+        }
+    }
+
+    private var titleColor: Color {
+        if imageLoaded { return article.seen ? Color.white.opacity(0.65) : .white }
+        return article.seen ? Color.secondary : Color.primary
     }
 
     private var metaRow: some View {
@@ -119,12 +135,12 @@ struct ArticleCard: View {
                 .frame(width: 6, height: 6)
             Text(article.sourceName)
                 .font(.caption2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(imageLoaded ? Color.white.opacity(0.75) : Color.secondary)
                 .lineLimit(1)
             if store.aiRewrite && displayed != article.title {
                 Image(systemName: "sparkles")
                     .font(.system(size: 9))
-                    .foregroundStyle(.purple.opacity(0.8))
+                    .foregroundStyle(imageLoaded ? Color.white.opacity(0.7) : Color.purple.opacity(0.8))
                     .help("AI-omskrevet overskrift")
             } else if store.aiRewrite && store.isRewriting {
                 ProgressView().controlSize(.mini)
@@ -134,7 +150,7 @@ struct ArticleCard: View {
                 TimelineView(.periodic(from: .now, by: 60)) { _ in
                     Text(relativeTime(date))
                         .font(.caption2.monospacedDigit())
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(imageLoaded ? Color.white.opacity(0.6) : Color.secondary.opacity(0.7))
                         .lineLimit(1)
                         .fixedSize()
                 }
