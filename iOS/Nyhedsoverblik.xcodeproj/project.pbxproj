@@ -29,6 +29,7 @@
 		E41EA39E9337F04FC53DC242 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A6B71E8CDE743DC6DABC42F5 /* Assets.xcassets */; };
 		E9F4EFAE02688625286E24EF /* HeadlineRewriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E66176B252A448A1E9972D5 /* HeadlineRewriter.swift */; };
 		EA8066A3E105D7CD69A918B9 /* PortraitViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2704DE49338D3AFD3377B51 /* PortraitViews.swift */; };
+		FB7B43A627C7B703E58C5856 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9428C65EAD1C0891CB773308 /* SplashView.swift */; };
 		FFE77898E3B0E228AA5BC4A6 /* NyhedsoverblikApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7CB960FF82B421B96EBA819 /* NyhedsoverblikApp.swift */; };
 /* End PBXBuildFile section */
 
@@ -47,6 +48,7 @@
 		69CBC9F13294B0802D2BF8F3 /* NyhedsoverblikIOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NyhedsoverblikIOSApp.swift; sourceTree = "<group>"; };
 		6F38A5AFDE00950E064F0E27 /* Keychain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Keychain.swift; sourceTree = "<group>"; };
 		903E4537A83CA7F69698D8D1 /* ArticleListRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArticleListRow.swift; sourceTree = "<group>"; };
+		9428C65EAD1C0891CB773308 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		9CB08B2F7365D47121D47F1B /* MiniWidgetPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniWidgetPanel.swift; sourceTree = "<group>"; };
 		A2704DE49338D3AFD3377B51 /* PortraitViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortraitViews.swift; sourceTree = "<group>"; };
 		A6B71E8CDE743DC6DABC42F5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -127,6 +129,7 @@
 				0A3CDAFBB2A9DCCD7EAA22D6 /* RSSParser.swift */,
 				2BC5C8A853E9953C601107F5 /* SettingsView.swift */,
 				D6F3E598B0770FCE0C621D11 /* SidebarView.swift */,
+				9428C65EAD1C0891CB773308 /* SplashView.swift */,
 				C7CD2B1903A1061443317C4A /* Themes.swift */,
 				21D59B6159F6B209181E4106 /* WebView.swift */,
 			);
@@ -224,6 +227,7 @@
 				68D8E35D6D7B2933BFCF0F9D /* RSSParser.swift in Sources */,
 				6A8F0A94AC848762C67FB189 /* SettingsView.swift in Sources */,
 				9F21F60C9367BED044345662 /* SidebarView.swift in Sources */,
+				FB7B43A627C7B703E58C5856 /* SplashView.swift in Sources */,
 				57A58CDF775ABCF35BAFB2BC /* Themes.swift in Sources */,
 				9C293689CE92B90206BFC8F3 /* WebView.swift in Sources */,
 			);

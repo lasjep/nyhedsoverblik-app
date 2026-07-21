@@ -142,6 +142,12 @@ final class FeedStore: ObservableObject {
     }
 
     init() {
+        // AsyncImage henter via URLSession.shared → URLCache.shared. Standard-
+        // cachen er for lille til nyhedsbilleder; større cache = billeder
+        // overlever scroll og genstart uden ny download
+        URLCache.shared = URLCache(memoryCapacity: 64 * 1024 * 1024,
+                                   diskCapacity: 512 * 1024 * 1024)
+
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("nyhedsoverblik")
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -503,10 +509,30 @@ final class FeedStore: ObservableObject {
         isLoading = false
         lastUpdated = Date()
         rebuild()
+        prefetchThumbnails()
         if aiRewrite && !apiKey.isEmpty { Task { await rewriteNewTitles() } }
         if breakingNewsEnabled && !apiKey.isEmpty { Task { await checkBreakingNews() } }
         nextRefreshAt = Date().addingTimeInterval(Double(refreshIntervalMinutes) * 60)
         saveWidgetData()
+    }
+
+    /// Varmer URL-cachen op med thumbnails i baggrunden, så billeder allerede
+    /// er hentet når man ruller ned til dem — AsyncImage rammer så cachen i
+    /// stedet for at starte en synlig download
+    private func prefetchThumbnails() {
+        let urls = Array(visibleArticles.compactMap(\.thumbnailURL).prefix(120))
+        guard !urls.isEmpty else { return }
+        Task.detached(priority: .utility) {
+            await withTaskGroup(of: Void.self) { group in
+                for url in urls {
+                    group.addTask {
+                        var req = URLRequest(url: url)
+                        req.cachePolicy = .returnCacheDataElseLoad
+                        _ = try? await URLSession.shared.data(for: req)
+                    }
+                }
+            }
+        }
     }
 
     // MARK: – Actions
