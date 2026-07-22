@@ -12,7 +12,6 @@ struct ArticleGridView: View {
     @EnvironmentObject var store: FeedStore
     @Environment(\.isPortraitLayout) private var isPortraitLayout
     @Environment(\.openWindow) private var openWindow
-    @State private var expandedClusters: Set<String> = []
 
     // Piletasts-navigation i listen — uafhængig af hvilken artikel der er åben i browseren,
     // så piletasterne kan flytte "cursoren" og scrolle listen uden at det tvinger fokus
@@ -162,7 +161,6 @@ struct ArticleGridView: View {
     private func isCursor(_ id: String) -> Bool { cursorID == id }
 
     // Rækkeluft der glider kontinuerligt med skriftstørrelsen — ingen tærskel-spring
-    private var rowPad: Double { max(3, (store.listFontSize - 11) * 0.5 + 3) }
 
     // MARK: – Indholds-views
 
@@ -193,176 +191,113 @@ struct ArticleGridView: View {
         }
     }
 
-    // En cluster af relaterede historier
-    private func clusterRow(_ cluster: StoryCluster) -> some View {
-        let expanded = expandedClusters.contains(cluster.id)
-        return VStack(spacing: 0) {
-            // Hoved-række
-            Button {
-                store.openArticle(cluster.articles[0])
-            } label: {
-                HStack(alignment: .center, spacing: 0) {
-                    // Farve-bar
-                    let barColor = cluster.articles.first.flatMap { a in
-                        store.sources.first(where: { $0.id == a.sourceID })?.color
-                    } ?? Color.secondary
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(barColor)
-                        .frame(width: 3, height: store.listFontSize * 1.3)
-                        .padding(.trailing, 12)
 
-                    // Thumbnail hvis tilgængeligt — men ikke i temavisningen,
-                    // hvor cluster-rækker skal ligne de kompakte artikelrækker
-                    if store.viewMode != .themes, let thumb = cluster.thumbnailURL {
-                        AsyncImage(url: thumb) { phase in
-                            if case .success(let img) = phase {
-                                img.resizable().aspectRatio(contentMode: .fill)
-                                    .frame(width: 48, height: 36)
-                                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                                    .padding(.trailing, 10)
-                            } else { EmptyView() }
-                        }
-                    }
-
-                    // Ingen kilde-linje før udfoldning — kilderne fremgår af
-                    // "N kilder"-badgen og af under-rækkerne når der foldes ud,
-                    // og en ekstra linje ville gøre rækken højere end de andre
-                    Text(store.displayTitle(for: cluster.articles[0]))
-                        .font(.system(size: store.listFontSize, weight: .semibold, design: store.headlineFontDesign))
-                        .lineLimit(2)
-                        .foregroundStyle(.primary)
-                        .layoutPriority(1)
-
-                    Spacer(minLength: 8)
-
-                    // Badge: antal kilder
-                    Button {
-                        withAnimation(.easeOut(duration: 0.15)) {
-                            if expanded { expandedClusters.remove(cluster.id) }
-                            else { expandedClusters.insert(cluster.id) }
-                        }
-                    } label: {
-                        HStack(spacing: 3) {
-                            Image(systemName: expanded ? "chevron.up" : "chevron.down")
-                                .font(.system(size: 9, weight: .semibold))
-                            Text("\(cluster.articles.count) kilder")
-                                .font(.caption2.bold())
-                        }
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(Color.secondary.opacity(0.6), in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.leading, 6)
-                }
-                .padding(.vertical, rowPad)
-                .padding(.horizontal, 14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            // Udvidede under-artikler — ALLE versioner inkl. den første,
-            // nu hvor den kollapsede række ikke længere viser nogen kilde
-            if expanded {
-                VStack(spacing: 0) {
-                    ForEach(cluster.articles) { article in
-                        ArticleListRow(article: article)
-                            .environmentObject(store)
-                            .padding(.leading, 20)  // indrykket for at vise hierarki
-                    }
-                }
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
+    // Udpak et FeedItem til (repræsentativ artikel, antal kilder)
+    private func unpack(_ item: FeedItem) -> (article: Article, count: Int) {
+        switch item {
+        case .single(let a):  return (a, 1)
+        case .cluster(let c): return (c.articles[0], c.articles.count)
         }
     }
 
+    // Liste: 2-linjet med lille thumbnail på ALLE rækker (billede eller placeholder)
     private var articleList: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
                 ForEach(store.feedItems) { item in
-                    switch item {
-                    case .single(let article):
-                        ArticleListRow(article: article)
-                            .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
-                            .id(item.id)
-                    case .cluster(let cluster):
-                        clusterRow(cluster)
-                            .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
-                            .id(item.id)
-                    }
+                    let u = unpack(item)
+                    ArticleListRow(article: u.article, showThumbnail: true, sourceCount: u.count)
+                        .background(isCursor(item.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                        .id(item.id)
+                    Divider().padding(.leading, 14)
                 }
             }
             .padding(.vertical, 4)
         }
     }
 
+    // Kompakt: ren tekst, 1 linje, ingen billeder — maksimal tæthed
     private var compactList: some View {
         ScrollView {
             LazyVStack(spacing: 0) {
                 ForEach(store.feedItems) { item in
-                    switch item {
-                    case .single(let article):
-                        CompactArticleRow(article: article)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 2)
-                            .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
-                            .id(item.id)
-                    case .cluster(let cluster):
-                        clusterRow(cluster)
-                            .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
-                            .id(item.id)
-                    }
+                    let u = unpack(item)
+                    CompactArticleRow(article: u.article, sourceCount: u.count)
+                        .padding(.horizontal, 12)
+                        .background(isCursor(item.id) ? Color.accentColor.opacity(0.12) : Color.clear)
+                        .id(item.id)
                 }
             }
             .padding(.vertical, 4)
         }
     }
 
-    // MARK: – Temaer
+    // MARK: – Temaer (kolonner side om side — alle temaer synlige på én gang)
 
     private var themesList: some View {
-        ScrollView {
-            LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
-                ForEach(store.themedItems) { group in
-                    Section {
-                        ForEach(group.items) { item in
-                            switch item {
-                            case .single(let article):
-                                ArticleListRow(article: article)
-                                    .background(isCursor(article.id) ? Color.accentColor.opacity(0.12) : Color.clear)
-                            case .cluster(let cluster):
-                                clusterRow(cluster)
-                                    .background(isCursor(cluster.id) ? Color.accentColor.opacity(0.12) : Color.clear)
-                            }
-                        }
-                    } header: {
-                        themeHeader(group.theme,
-                                    total: group.articles.count,
-                                    unseen: group.articles.filter { !$0.seen }.count)
+        // Faste tema-kolonner i kanonisk rækkefølge; tomme temaer udelades.
+        // I portrait (iPad) stables de lodret, ellers side om side.
+        let groups = store.themedItems
+        return Group {
+            if isPortraitLayout {
+                ScrollView {
+                    VStack(spacing: 12) {
+                        ForEach(groups) { themeColumn($0, fixedHeight: false) }
                     }
+                    .padding(10)
                 }
+            } else {
+                HStack(alignment: .top, spacing: 10) {
+                    ForEach(groups) { themeColumn($0, fixedHeight: true) }
+                }
+                .padding(10)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
-            .padding(.vertical, 4)
         }
     }
 
-    private func themeHeader(_ theme: NewsTheme, total: Int, unseen: Int) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: theme.icon)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.accentColor)
-            Text(theme.displayName)
-                .font(.system(size: 15, weight: .bold, design: .serif))
-            Text(unseen > 0 ? "\(unseen) ulæste af \(total)" : "\(total)")
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
-            Spacer()
+    private func themeColumn(_ group: ThemedGroup, fixedHeight: Bool) -> some View {
+        let unseen = group.articles.filter { !$0.seen }.count
+        return VStack(spacing: 0) {
+            // Farvet header
+            HStack(spacing: 7) {
+                Image(systemName: group.theme.icon)
+                    .font(.system(size: 13, weight: .bold))
+                Text(group.theme.displayName)
+                    .font(.system(size: 15, weight: .bold, design: .serif))
+                Spacer()
+                Text("\(unseen)")
+                    .font(.caption.monospacedDigit().bold())
+                    .padding(.horizontal, 6).padding(.vertical, 1)
+                    .background(.white.opacity(0.25), in: Capsule())
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .background(group.theme.tint)
+
+            // Artikler
+            let rows = ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(group.items) { item in
+                        let u = unpack(item)
+                        CompactArticleRow(article: u.article, sourceCount: u.count)
+                            .padding(.horizontal, 10)
+                            .background(isCursor(item.id) ? Color.accentColor.opacity(0.14) : Color.clear)
+                            .id(item.id)
+                        Divider().padding(.leading, 18)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            .background(group.theme.tint.opacity(0.06))
+
+            if fixedHeight { rows } else { rows.frame(height: 320) }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, max(4, store.listFontSize * 0.4))
-        .background(.bar)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(group.theme.tint.opacity(0.3), lineWidth: 1))
+        .frame(maxWidth: .infinity)
     }
 
     private var loadingView: some View {

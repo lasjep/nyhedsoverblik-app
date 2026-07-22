@@ -205,8 +205,8 @@ struct PortraitRootView: View {
                 ScrollView {
                     LazyVStack(spacing: 0) {
                         ForEach(queueArticles) { article in
-                            ArticleListRow(article: article)
-                            Divider().padding(.leading, 43)
+                            ArticleListRow(article: article, showThumbnail: true)
+                            Divider().padding(.leading, 14)
                         }
                     }
                     .padding(.bottom, 14)
@@ -219,7 +219,6 @@ struct PortraitRootView: View {
                         ForEach(queueArticles) { article in
                             CompactArticleRow(article: article)
                                 .padding(.horizontal, 16)
-                                .padding(.vertical, 3)
                             Divider().padding(.leading, 32)
                         }
                     }
@@ -233,24 +232,26 @@ struct PortraitRootView: View {
                         ForEach(themedQueue, id: \.theme) { group in
                             Section {
                                 ForEach(group.articles) { article in
-                                    ArticleListRow(article: article)
-                                    Divider().padding(.leading, 43)
+                                    CompactArticleRow(article: article)
+                                        .padding(.horizontal, 16)
+                                    Divider().padding(.leading, 32)
                                 }
                             } header: {
                                 HStack(spacing: 6) {
                                     Image(systemName: group.theme.icon)
-                                        .font(.system(size: 11, weight: .semibold))
-                                        .foregroundStyle(Color.accentColor)
+                                        .font(.system(size: 12, weight: .bold))
                                     Text(group.theme.displayName)
-                                        .font(.system(size: 13, weight: .bold, design: .serif))
-                                    Text("\(group.articles.count)")
-                                        .font(.caption2.monospacedDigit())
-                                        .foregroundStyle(.secondary)
+                                        .font(.system(size: 14, weight: .bold, design: .serif))
                                     Spacer()
+                                    Text("\(group.articles.count)")
+                                        .font(.caption2.monospacedDigit().bold())
+                                        .padding(.horizontal, 6).padding(.vertical, 1)
+                                        .background(.white.opacity(0.25), in: Capsule())
                                 }
+                                .foregroundStyle(.white)
                                 .padding(.horizontal, 16)
-                                .padding(.vertical, 6)
-                                .background(.bar)
+                                .padding(.vertical, 8)
+                                .background(group.theme.tint)
                             }
                         }
                     }
@@ -264,7 +265,8 @@ struct PortraitRootView: View {
     // Artikler i køen grupperet efter tema (fast rækkefølge, tomme temaer udelades)
     private var themedQueue: [(theme: NewsTheme, articles: [Article])] {
         let grouped = Dictionary(grouping: queueArticles) {
-            classifyTheme(url: $0.id, sourceID: $0.sourceID, tags: $0.tags)
+            classifyTheme(url: $0.id, sourceID: $0.sourceID, tags: $0.tags,
+                          aiTheme: store.aiThemes[$0.title])
         }
         return NewsTheme.allCases.compactMap { theme in
             guard let arts = grouped[theme], !arts.isEmpty else { return nil }

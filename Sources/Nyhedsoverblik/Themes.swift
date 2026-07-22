@@ -30,6 +30,17 @@ enum NewsTheme: String, CaseIterable, Identifiable {
         case .andet:   return "tray"
         }
     }
+
+    // Karakterfarve pr. tema — bruges til kolonne-headers og svag baggrundstone
+    var tint: Color {
+        switch self {
+        case .indland: return Color(red: 0.20, green: 0.55, blue: 0.90)  // blå
+        case .udland:  return Color(red: 0.15, green: 0.65, blue: 0.55)  // teal
+        case .politik: return Color(red: 0.78, green: 0.35, blue: 0.30)  // teglrød
+        case .tech:    return Color(red: 0.55, green: 0.40, blue: 0.85)  // lilla
+        case .andet:   return Color(red: 0.60, green: 0.55, blue: 0.50)  // varm grå
+        }
+    }
 }
 
 /// Ét temas indhold: den flade artikelliste (til optælling) og den
@@ -76,8 +87,12 @@ private let tagThemes: [(NewsTheme, [String])] = [
     (.indland, ["indland", "danmark", "krimi", "samfund"]),
 ]
 
-/// Klassificerer en artikel: URL-sti → tags → kildestandard → andet.
-func classifyTheme(url: String, sourceID: String, tags: [String] = []) -> NewsTheme {
+/// Klassificerer en artikel: AI-tema → URL-sti → tags → kildestandard → andet.
+/// `aiTheme` er modellens vurdering af selve overskriften og går forud for alt,
+/// fordi den fanger tilfælde hvor URL/tags er intetsigende (fx EB's flade stier).
+func classifyTheme(url: String, sourceID: String, tags: [String] = [], aiTheme: NewsTheme? = nil) -> NewsTheme {
+    // 0. AI-tema — læser overskriftens faktiske indhold
+    if let aiTheme { return aiTheme }
     // 1. URL-sti — sektionen er redaktionens egen kategorisering
     if let path = URL(string: url)?.path.lowercased() {
         for (theme, segments) in pathThemes {

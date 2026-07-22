@@ -112,6 +112,9 @@ final class FeedStore: ObservableObject {
     // Titler AI'en har flagget som sport — supplerer ordliste-filteret i isSport(),
     // der ikke kender atletnavne ("Pogacar vinder igen" har hverken sport-ord eller -URL)
     private var aiSportTitles: Set<String> = []
+    // Original titel → AI-bestemt tema. Går forud for URL/tag-heuristikken i
+    // classifyTheme(), da modellen læser selve overskriften ("Søfolk i Hormuz" → udland)
+    @Published private(set) var aiThemes: [String: NewsTheme] = [:]
 
     // Breaking news
     @Published var breakingNewsEnabled: Bool = false
@@ -130,6 +133,7 @@ final class FeedStore: ObservableObject {
     private let seenFileURL: URL
     private let rewrittenFileURL: URL
     private let aiSportFileURL: URL
+    private let aiThemesFileURL: URL
     private let notifiedFileURL: URL
     private let customSourcesFileURL: URL
 
@@ -169,12 +173,14 @@ final class FeedStore: ObservableObject {
         seenFileURL = dir.appendingPathComponent("seen.json")
         rewrittenFileURL = dir.appendingPathComponent("rewritten.json")
         aiSportFileURL = dir.appendingPathComponent("aisport.json")
+        aiThemesFileURL = dir.appendingPathComponent("aithemes.json")
         notifiedFileURL = dir.appendingPathComponent("notified.json")
         customSourcesFileURL = dir.appendingPathComponent("custom_sources.json")
         loadSeen()
         loadNotified()
         loadRewritten()
         loadAISport()
+        loadAIThemes()
         loadPrefs()
         loadCustomSources()
         setupPipelines()
@@ -297,7 +303,8 @@ final class FeedStore: ObservableObject {
         // 4) Temaer: gruppér + cluster inden for hvert tema — cachet her så
         //    O(n²)-clusteringen ikke køres ved hver render af temavisningen
         let byTheme = Dictionary(grouping: visible) {
-            classifyTheme(url: $0.id, sourceID: $0.sourceID, tags: $0.tags)
+            classifyTheme(url: $0.id, sourceID: $0.sourceID, tags: $0.tags,
+                          aiTheme: aiThemes[$0.title])
         }
         themedItems = NewsTheme.allCases.compactMap { theme in
             guard let arts = byTheme[theme], !arts.isEmpty else { return nil }
@@ -604,20 +611,26 @@ final class FeedStore: ObservableObject {
         for batch in batches {
             if let results = await HeadlineRewriter.rewrite(batch, apiKey: apiKey) {
                 var flaggedSport = false
+                var newThemes = false
                 for (orig, res) in results {
                     rewrittenTitles[orig] = res.rewritten
                     if res.isSport {
                         aiSportTitles.insert(orig)
                         flaggedSport = true
                     }
+                    if let t = res.theme, let theme = NewsTheme(rawValue: t) {
+                        aiThemes[orig] = theme
+                        newThemes = true
+                    }
                 }
-                // Nyflagget sport skal ud af visningen med det samme
-                if flaggedSport && filterSport { rebuild() }
+                // Nyt sport-flag eller nye temaer skal afspejles i visningen straks
+                if (flaggedSport && filterSport) || newThemes { rebuild() }
             }
         }
         isRewriting = false
         saveRewritten()
         saveAISport()
+        saveAIThemes()
     }
 
     func displayTitle(for article: Article) -> String {
@@ -688,6 +701,20 @@ final class FeedStore: ObservableObject {
     private func saveRewritten() {
         guard let data = try? JSONEncoder().encode(rewrittenTitles) else { return }
         try? data.write(to: rewrittenFileURL, options: .atomic)
+    }
+
+    private func loadAIThemes() {
+        guard let data = try? Data(contentsOf: aiThemesFileURL),
+              let dict = try? JSONDecoder().decode([String: String].self, from: data)
+        else { return }
+        aiThemes = dict.reduce(into: [:]) { acc, kv in
+            if let theme = NewsTheme(rawValue: kv.value) { acc[kv.key] = theme }
+        }
+    }
+    private func saveAIThemes() {
+        let raw = aiThemes.mapValues(\.rawValue)
+        guard let data = try? JSONEncoder().encode(raw) else { return }
+        try? data.write(to: aiThemesFileURL, options: .atomic)
     }
 
     private func loadAISport() {

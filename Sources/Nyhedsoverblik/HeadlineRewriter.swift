@@ -4,6 +4,7 @@ enum HeadlineRewriter {
     struct Result: Sendable {
         let rewritten: String
         let isSport: Bool
+        let theme: String?   // indland/udland/politik/tech/andet — nil hvis modellen udelod feltet
     }
 
     /// Kalder Claude API og returnerer en dict original → (omskrevet, sport-flag).
@@ -27,12 +28,24 @@ enum HeadlineRewriter {
         transfers, trænere eller navngivne sportsudøvere som fx Pogacar eller Mbappé) — \
         ellers "s":false. Erhvervs-/tech-nyheder OM sportsbranchen (tv-rettigheder, \
         streamingtjenester, sponsorater) er IKKE sport. \
+        Du kategoriserer også hver overskrift i PRÆCIS ét tema ("t"): \
+        "indland" (Danmark: dansk krimi, samfund, trafik, vejr, sundhed og lokalstof — \
+        men dansk politik hører under politik), \
+        "udland" (alt der geografisk foregår uden for Danmark eller handler om andre landes \
+        forhold — også katastrofer, krig, ulykker og evakueringer i udlandet), \
+        "politik" (dansk OG international politik: regeringer, valg, folketing, ministre, EU, partier), \
+        "tech" (teknologi, gadgets, software, AI, forbrugerelektronik, tech-virksomheder), \
+        "andet" (kultur, underholdning, erhverv, økonomi, videnskab, livsstil, mad, rejser \
+        og alt der ikke passer ovenfor). \
+        Eksempler: "Søfolk får høj løn for at sejle gennem Hormuz" → udland. \
+        "Hundredvis evakueres i Sydfrankrig" → udland. \
+        "Sjælden møgbille fundet under bioblitz" → andet. \
         Svar KUN med JSON-objektet, ingen forklaringer.
         """
 
         let userPrompt = """
         Omskriv disse overskrifter. Svar med JSON:
-        {"rewrites":[{"i":1,"r":"omskrevet overskrift","s":false},{"i":2,"r":"...","s":true},...]}
+        {"rewrites":[{"i":1,"r":"omskrevet overskrift","s":false,"t":"indland"},{"i":2,"r":"...","s":true,"t":"udland"},...]}
 
         Overskrifter:
         \(list)
@@ -79,7 +92,8 @@ enum HeadlineRewriter {
                   let rewritten = entry["r"] as? String,
                   idx >= 1, idx <= titles.count else { continue }
             result[titles[idx - 1]] = Result(rewritten: rewritten,
-                                             isSport: entry["s"] as? Bool ?? false)
+                                             isSport: entry["s"] as? Bool ?? false,
+                                             theme: entry["t"] as? String)
         }
         return result
     }
