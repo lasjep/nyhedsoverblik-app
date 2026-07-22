@@ -232,31 +232,27 @@ struct ArticleGridView: View {
         }
     }
 
-    // MARK: – Temaer (kolonner side om side — alle temaer synlige på én gang)
+    // MARK: – Temaer (lodret stablede lister, hver med fast andel af højden)
 
     private var themesList: some View {
-        // Faste tema-kolonner i kanonisk rækkefølge; tomme temaer udelades.
-        // I portrait (iPad) stables de lodret, ellers side om side.
-        let groups = store.themedItems
-        return Group {
-            if isPortraitLayout {
-                ScrollView {
-                    VStack(spacing: 12) {
-                        ForEach(groups) { themeColumn($0, fixedHeight: false) }
-                    }
-                    .padding(10)
+        // Fast rækkefølge, ALLE fire temaer vises altid (også tomme, så
+        // layoutet er stabilt) — hver optager en lige stor bane af højden
+        let groups = NewsTheme.allCases.map { theme in
+            store.themedItems.first(where: { $0.theme == theme })
+                ?? ThemedGroup(theme: theme, articles: [], items: [])
+        }
+        return GeometryReader { geo in
+            let bandH = (geo.size.height - CGFloat(groups.count - 1) * 8) / CGFloat(groups.count)
+            VStack(spacing: 8) {
+                ForEach(groups) { group in
+                    themeBand(group, height: max(80, bandH))
                 }
-            } else {
-                HStack(alignment: .top, spacing: 10) {
-                    ForEach(groups) { themeColumn($0, fixedHeight: true) }
-                }
-                .padding(10)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
+            .padding(8)
         }
     }
 
-    private func themeColumn(_ group: ThemedGroup, fixedHeight: Bool) -> some View {
+    private func themeBand(_ group: ThemedGroup, height: CGFloat) -> some View {
         let unseen = group.articles.filter { !$0.seen }.count
         return VStack(spacing: 0) {
             // Farvet header
@@ -273,12 +269,12 @@ struct ArticleGridView: View {
             }
             .foregroundStyle(.white)
             .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            .padding(.vertical, 6)
             .frame(maxWidth: .infinity)
             .background(group.theme.tint)
 
-            // Artikler
-            let rows = ScrollView {
+            // Artikler — egen scroll inden i banen
+            ScrollView {
                 LazyVStack(spacing: 0) {
                     ForEach(group.items) { item in
                         let u = unpack(item)
@@ -289,15 +285,13 @@ struct ArticleGridView: View {
                         Divider().padding(.leading, 18)
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 3)
             }
-            .background(group.theme.tint.opacity(0.06))
-
-            if fixedHeight { rows } else { rows.frame(height: 320) }
+            .background(group.theme.tint.opacity(0.05))
         }
+        .frame(height: height)
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(group.theme.tint.opacity(0.3), lineWidth: 1))
-        .frame(maxWidth: .infinity)
     }
 
     private var loadingView: some View {

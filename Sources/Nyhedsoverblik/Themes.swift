@@ -7,7 +7,6 @@ enum NewsTheme: String, CaseIterable, Identifiable {
     case udland
     case politik
     case tech
-    case andet
 
     var id: String { rawValue }
 
@@ -17,7 +16,6 @@ enum NewsTheme: String, CaseIterable, Identifiable {
         case .udland:  return "Udland"
         case .politik: return "Politik"
         case .tech:    return "Tech"
-        case .andet:   return "Andet"
         }
     }
 
@@ -27,18 +25,16 @@ enum NewsTheme: String, CaseIterable, Identifiable {
         case .udland:  return "globe.europe.africa"
         case .politik: return "building.columns"
         case .tech:    return "cpu"
-        case .andet:   return "tray"
         }
     }
 
-    // Karakterfarve pr. tema — bruges til kolonne-headers og svag baggrundstone
+    // Karakterfarve pr. tema — bruges til headers og svag baggrundstone
     var tint: Color {
         switch self {
         case .indland: return Color(red: 0.20, green: 0.55, blue: 0.90)  // blå
         case .udland:  return Color(red: 0.15, green: 0.65, blue: 0.55)  // teal
         case .politik: return Color(red: 0.78, green: 0.35, blue: 0.30)  // teglrød
         case .tech:    return Color(red: 0.55, green: 0.40, blue: 0.85)  // lilla
-        case .andet:   return Color(red: 0.60, green: 0.55, blue: 0.50)  // varm grå
         }
     }
 }
@@ -87,9 +83,10 @@ private let tagThemes: [(NewsTheme, [String])] = [
     (.indland, ["indland", "danmark", "krimi", "samfund"]),
 ]
 
-/// Klassificerer en artikel: AI-tema → URL-sti → tags → kildestandard → andet.
+/// Klassificerer en artikel: AI-tema → URL-sti → tags → kildestandard → indland.
 /// `aiTheme` er modellens vurdering af selve overskriften og går forud for alt,
 /// fordi den fanger tilfælde hvor URL/tags er intetsigende (fx EB's flade stier).
+/// Der findes kun fire temaer; uden andet signal antages dansk almenstof (indland).
 func classifyTheme(url: String, sourceID: String, tags: [String] = [], aiTheme: NewsTheme? = nil) -> NewsTheme {
     // 0. AI-tema — læser overskriftens faktiske indhold
     if let aiTheme { return aiTheme }
@@ -111,5 +108,6 @@ func classifyTheme(url: String, sourceID: String, tags: [String] = [], aiTheme: 
     }
     // 3. Kildestandard (rene tech-/udlandskilder)
     if let theme = sourceThemes[sourceID] { return theme }
-    return .andet
+    // 4. Intet signal → dansk almenstof
+    return .indland
 }

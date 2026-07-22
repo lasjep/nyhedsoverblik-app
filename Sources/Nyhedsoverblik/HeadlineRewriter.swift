@@ -28,18 +28,23 @@ enum HeadlineRewriter {
         transfers, trænere eller navngivne sportsudøvere som fx Pogacar eller Mbappé) — \
         ellers "s":false. Erhvervs-/tech-nyheder OM sportsbranchen (tv-rettigheder, \
         streamingtjenester, sponsorater) er IKKE sport. \
-        Du kategoriserer også hver overskrift i PRÆCIS ét tema ("t"): \
-        "indland" (Danmark: dansk krimi, samfund, trafik, vejr, sundhed og lokalstof — \
-        men dansk politik hører under politik), \
+        Du kategoriserer også hver overskrift i PRÆCIS ét af FIRE temaer ("t") — \
+        der findes ikke et "andet", så vælg altid det bedst passende af de fire: \
+        "politik" (dansk OG international politik: regeringer, valg, folketing, ministre, \
+        EU, partier, lovgivning), \
+        "tech" (teknologi, gadgets, software, AI, forbrugerelektronik, tech-virksomheder, \
+        videnskab og forskning), \
         "udland" (alt der geografisk foregår uden for Danmark eller handler om andre landes \
-        forhold — også katastrofer, krig, ulykker og evakueringer i udlandet), \
-        "politik" (dansk OG international politik: regeringer, valg, folketing, ministre, EU, partier), \
-        "tech" (teknologi, gadgets, software, AI, forbrugerelektronik, tech-virksomheder), \
-        "andet" (kultur, underholdning, erhverv, økonomi, videnskab, livsstil, mad, rejser \
-        og alt der ikke passer ovenfor). \
+        forhold — også katastrofer, krig, ulykker og evakueringer i udlandet, samt \
+        international kultur/erhverv/sport), \
+        "indland" (dansk stof der ikke er politik eller tech: krimi, samfund, trafik, vejr, \
+        sundhed, lokalstof, dansk kultur, dansk erhverv/økonomi, livsstil, mad, natur). \
+        Regel: er historien dansk og hverken politik eller tech → indland; \
+        er den udenlandsk og hverken politik eller tech → udland. \
         Eksempler: "Søfolk får høj løn for at sejle gennem Hormuz" → udland. \
         "Hundredvis evakueres i Sydfrankrig" → udland. \
-        "Sjælden møgbille fundet under bioblitz" → andet. \
+        "Sjælden møgbille fundet under dansk bioblitz" → indland. \
+        "Novo Nordisk sagsøger rival" → indland (dansk erhverv). \
         Svar KUN med JSON-objektet, ingen forklaringer.
         """
 

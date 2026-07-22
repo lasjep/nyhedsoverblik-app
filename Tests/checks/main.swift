@@ -236,14 +236,16 @@ check(classifyTheme(url: "https://www.nytimes.com/2026/07/14/technology/ai-chips
       "NYT technology → tech (sti før kildestandard)")
 check(classifyTheme(url: "https://ekstrabladet.dk/nyheder/samfundet/opdateret-sag", sourceID: "eb") == .indland,
       "EB /samfund → indland")
-check(classifyTheme(url: "https://borsen.dk/nyheder/virksomheder/stort-opkoeb", sourceID: "borsen") == .andet,
-      "Børsen virksomheder → andet")
+check(classifyTheme(url: "https://borsen.dk/nyheder/virksomheder/stort-opkoeb", sourceID: "borsen") == .indland,
+      "Børsen virksomheder → indland (ingen andet-kategori)")
 check(classifyTheme(url: "https://www.dr.dk/nyheder/seneste/kort-nyt", sourceID: "dr",
                     tags: ["Politik"]) == .politik,
       "tag 'Politik' → politik")
 check(classifyTheme(url: "https://example.dk/artikel/x", sourceID: "custom1",
-                    tags: ["Italien"]) == .andet,
-      "tag 'Italien' rammer ikke 'it'-ordet")
+                    tags: ["Italien"]) == .indland,
+      "tag 'Italien' rammer ikke 'it'-ordet, falder til indland")
+check(classifyTheme(url: "https://x.dk/a", sourceID: "eb", aiTheme: .udland) == .udland,
+      "AI-tema går forud for heuristik")
 
 // MARK: – Resultat
 
